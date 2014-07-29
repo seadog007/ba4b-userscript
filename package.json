@@ -1,0 +1,17 @@
+{
+  "name": "ba4b-userscript",
+  "version": "1.0.0",
+  "description": "ba4b-userscript",
+  "author": "ba4b",
+  "main": "index.js",
+  "repository": "https://github.com/ba4b/ba4b-userscript",
+  "devDependencies": {
+    "commonjs-everywhere": "~0.9.4"
+  },
+  "scripts": {
+    "prepublish": "build"
+  },
+  "browser": "./dist/ba4b-userscript.user.js",
+  "license": "GPL3 and above",
+  "readmeFilename": "README.md"
+}
