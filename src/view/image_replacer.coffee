@@ -10,8 +10,15 @@ class ImageReplacer
       str = this.src
       return format.test str
     images.each ->
-      name = format.exec this.src
-      name = name[1]
+      str = this.src
+      name = str.split("/")
+      ###
+      "I really have no idea why it didn't work"
+      if not name
+        console.log str, "exec fail?"
+        return true
+      ###
+      name = name[6]
       
       for value in list
         if value.BAHA_ID is name
@@ -20,7 +27,10 @@ class ImageReplacer
           else
             this.src = "http:\/\/www.gravatar.com\/avatar\/#{value.HASHED_MAIL}?s=110"
           result = true
-          return false
+          return true
           
       return true
     return true
+
+
+module.exports = ImageReplacer

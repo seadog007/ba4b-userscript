@@ -25,14 +25,15 @@ list format
 main = ($)->
   downloader = new Downloader
   imageChanger = new ImageChanger $
-  cacheMap = {}
+  cacheList = {}
   downloader.responseType = "json"
   
   downloader.on "success", (obj)->
     imageChanger.change obj.list
-    cacheMap = map
+    cacheList = obj.list
     return true
   downloader.download config.path
   
 
-main(libs.$)
+if window is window.top
+  main libs.$

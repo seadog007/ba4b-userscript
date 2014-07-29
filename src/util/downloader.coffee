@@ -24,6 +24,10 @@ class Downloader extends EventEmitter
       url : url
       onload : (e)=>
         response = e.responseText
+        
+        console.log 'download finish'
+        console.log e.responseText
+        
         if @responseType is "json"
           response = JSON.parse response
         

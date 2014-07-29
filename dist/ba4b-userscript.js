@@ -57,19 +57,20 @@
     config = require('/config.js', module);
     ImageChanger = require('/view/image_replacer.coffee', module);
     main = function ($) {
-      var cacheMap, downloader, imageChanger;
+      var cacheList, downloader, imageChanger;
       downloader = new Downloader;
       imageChanger = new ImageChanger($);
-      cacheMap = {};
+      cacheList = {};
       downloader.responseType = 'json';
       downloader.on('success', function (obj) {
         imageChanger.change(obj.list);
-        cacheMap = map;
+        cacheList = obj.list;
         return true;
       });
       return downloader.download(config.path);
     };
-    main(libs.$);
+    if (window === window.top)
+      main(libs.$);
   });
   require.define('/view/image_replacer.coffee', function (module, exports, __dirname, __filename) {
     var ImageReplacer;
@@ -88,9 +89,10 @@
           return format.test(str);
         });
         images.each(function () {
-          var name, value;
-          name = format.exec(this.src);
-          name = name[1];
+          var name, str, value;
+          str = this.src;
+          name = str.split('/');
+          name = name[6];
           for (var i$ = 0, length$ = list.length; i$ < length$; ++i$) {
             value = list[i$];
             if (value.BAHA_ID === name) {
@@ -100,7 +102,7 @@
                 this.src = 'http://www.gravatar.com/avatar/' + value.HASHED_MAIL + '?s=110';
               }
               result = true;
-              return false;
+              return true;
             }
           }
           return true;
@@ -109,6 +111,7 @@
       };
       return ImageReplacer;
     }();
+    module.exports = ImageReplacer;
   });
   require.define('/config.js', function (module, exports, __dirname, __filename) {
     var config = { path: '' };
@@ -143,6 +146,8 @@
             return function (e) {
               var response;
               response = e.responseText;
+              console.log('download finish');
+              console.log(e.responseText);
               if (this$.responseType === 'json')
                 response = JSON.parse(response);
               if (!response) {
