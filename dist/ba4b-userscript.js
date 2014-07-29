@@ -62,8 +62,8 @@
       imageChanger = new ImageChanger($);
       cacheMap = {};
       downloader.responseType = 'json';
-      downloader.on('success', function (map) {
-        imageChanger.change(map);
+      downloader.on('success', function (obj) {
+        imageChanger.change(obj.list);
         cacheMap = map;
         return true;
       });
@@ -77,23 +77,35 @@
       function ImageReplacer(jQuery) {
         this.$ = jQuery;
       }
-      ImageReplacer.prototype.change = function (map) {
-        var format, images;
+      ImageReplacer.prototype.change = function (list) {
+        var format, images, result;
         images = this.$('img');
+        result = false;
         format = /http:\/\/avatar2.bahamut.com.tw\/avataruserpic\/\w\/\w\/(\w+)\/.*/g;
         images = images.filter(function () {
           var str;
           str = this.src;
           return format.test(str);
         });
-        return images.each(function () {
-          var name;
+        images.each(function () {
+          var name, value;
           name = format.exec(this.src);
           name = name[1];
-          if (name && map[name])
-            this.src = map[name];
+          for (var i$ = 0, length$ = list.length; i$ < length$; ++i$) {
+            value = list[i$];
+            if (value.BAHA_ID === name) {
+              if (str.search('_s') >= 0) {
+                this.src = 'http://www.gravatar.com/avatar/' + value.HASHED_MAIL + '?s=40';
+              } else {
+                this.src = 'http://www.gravatar.com/avatar/' + value.HASHED_MAIL + '?s=110';
+              }
+              result = true;
+              return false;
+            }
+          }
           return true;
         });
+        return true;
       };
       return ImageReplacer;
     }();
@@ -133,8 +145,10 @@
               response = e.responseText;
               if (this$.responseType === 'json')
                 response = JSON.parse(response);
-              if (!response)
+              if (!response) {
                 this$.emit('fail', url);
+                return true;
+              }
               this$.emit('success', response);
               return true;
             };

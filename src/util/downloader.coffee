@@ -29,6 +29,7 @@ class Downloader extends EventEmitter
         
         if (!response)
           @emit 'fail', url
+          return true
         
         @emit 'success',response
         return true
