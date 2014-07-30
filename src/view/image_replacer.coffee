@@ -2,8 +2,11 @@ class ImageReplacer
   constructor: (jQuery)->
     @$ = jQuery
   
-  change: (list)->
-    images = @$ "img"
+  change: (list, parent)->
+    if parent?
+      images = (@$ parent).find 'img'
+    else
+      images = @$ "img"
     result = false
     format = /http:\/\/avatar2.bahamut.com.tw\/avataruserpic\/\w\/\w\/(\w+)\/.*/g
     images = images.filter ()->
