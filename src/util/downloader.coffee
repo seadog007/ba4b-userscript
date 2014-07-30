@@ -2,8 +2,6 @@
 
 class Downloader extends EventEmitter
   constructor: ()->
-    @_cachedURL = []
-    @_cache = {}
     @locked = false
     @responseType = ""
   download: (url)->
@@ -11,22 +9,17 @@ class Downloader extends EventEmitter
       console.log 'incorrect invoke'
       return false
     
-    if url in @_cachedURL
-      @emit 'success', @_cache[url]
-      @removeAllListeners 'success'
-      return true
-    
     @locked = true
     
-    console.log 'download start'
+    console.log "download start : #{url}"
     
     GM_xmlhttpRequest
       url : url
       onload : (e)=>
         response = e.responseText
         
-        console.log 'download finish'
-        console.log e.responseText
+        console.log "download finish : #{url}"
+        #console.log e.responseText
         
         if @responseType is "json"
           response = JSON.parse response
