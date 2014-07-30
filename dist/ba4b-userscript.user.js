@@ -63,26 +63,84 @@
       };
     }();
   require.define('/ba4b-userscript.coffee', function (module, exports, __dirname, __filename) {
-    var config, Downloader, ImageChanger, libs, main;
+    var defaultConfig, Downloader, ImageChanger, libs, main, Storage;
     libs = { $: jQuery };
     Downloader = require('/util/downloader.coffee', module);
-    config = require('/config.js', module);
+    defaultConfig = require('/config.js', module);
     ImageChanger = require('/view/image_replacer.coffee', module);
+    Storage = require('/util/storage.coffee', module);
     main = function ($) {
-      var cacheList, downloader, imageChanger;
+      var config, downloader, imageChanger, storage;
       downloader = new Downloader;
       imageChanger = new ImageChanger($);
-      cacheList = {};
       downloader.responseType = 'json';
-      downloader.on('success', function (obj) {
-        imageChanger.change(obj.list);
-        cacheList = obj.list;
-        return true;
-      });
-      return downloader.download(config.path);
+      storage = new Storage(GM_getValue, GM_setValue);
+      config = storage.get(config, defaultConfig);
+      if (null != storage.get('list') && storage.get('expire') > Date.now()) {
+        imageChanger.change(storage.get('list'));
+      } else {
+        downloader.on('success', function (obj) {
+          imageChanger.change(obj.list);
+          storage.set('expire', Date.now() + config.expireTime * 1e3);
+          storage.set('list', obj.list);
+          return true;
+        });
+        downloader.download(config.path);
+      }
+      return true;
     };
     if (window === window.top)
       main(libs.$);
+  });
+  require.define('/util/storage.coffee', function (module, exports, __dirname, __filename) {
+    var GM_Storage;
+    GM_Storage = function () {
+      function GM_Storage(getMethod, setMethod, namespace) {
+        if (null == namespace)
+          namespace = 'ba4b';
+        this._get = getMethod;
+        this._set = setMethod;
+        this.namespace = namespace;
+        this.cache = null;
+        this._load();
+      }
+      GM_Storage.prototype.set = function (key, value) {
+        this._load();
+        this.cache[key] = value;
+        return this._save();
+      };
+      GM_Storage.prototype.get = function (key, defaultValue) {
+        this._load();
+        if (this.cache[key]) {
+          return this.cache[key];
+        } else if (null != defaultValue) {
+          return defaultValue;
+        } else {
+          return void 0;
+        }
+      };
+      GM_Storage.prototype.remove = function (key) {
+        this._load();
+        delete cache[key];
+        return this._save();
+      };
+      GM_Storage.prototype.reload = function () {
+        return this._load;
+      };
+      GM_Storage.prototype._load = function () {
+        if (GM_getValue(this.namespace)) {
+          return this.cache = JSON.parse(GM_getValue(this.namespace));
+        } else {
+          this.cache = {};
+          return this._save;
+        }
+      };
+      GM_Storage.prototype._save = function () {
+        return GM_setValue(this.namespace, JSON.stringify(this.cache));
+      };
+      return GM_Storage;
+    }();
+    module.exports = GM_Storage;
   });
   require.define('/view/image_replacer.coffee', function (module, exports, __dirname, __filename) {
     var ImageReplacer;
@@ -126,7 +184,10 @@
     module.exports = ImageReplacer;
   });
   require.define('/config.js', function (module, exports, __dirname, __filename) {
-    var config = { path: '' };
+    var config = {
+        path: '',
+        expireTime: '1800'
+      };
     module.exports = config;
   });
   require.define('/util/downloader.coffee', function (module, exports, __dirname, __filename) {
@@ -135,8 +196,6 @@
     Downloader = function (super$) {
       extends$(Downloader, super$);
       function Downloader() {
-        this._cachedURL = [];
-        this._cache = {};
         this.locked = false;
         this.responseType = '';
       }
@@ -145,21 +204,15 @@
           console.log('incorrect invoke');
           return false;
         }
-        if (in$(url, this._cachedURL)) {
-          this.emit('success', this._cache[url]);
-          this.removeAllListeners('success');
-          return true;
-        }
         this.locked = true;
-        console.log('download start');
+        console.log('download start : ' + url);
         GM_xmlhttpRequest({
           url: url,
           onload: function (this$) {
             return function (e) {
               var response;
               response = e.responseText;
-              console.log('download finish');
-              console.log(e.responseText);
+              console.log('download finish : ' + url);
               if (this$.responseType === 'json')
                 response = JSON.parse(response);
               if (!response) {
@@ -184,12 +237,6 @@
       return Downloader;
     }(EventEmitter);
     module.exports = Downloader;
-    function in$(member, list) {
-      for (var i = 0, length = list.length; i < length; ++i)
-        if (i in list && list[i] === member)
-          return true;
-      return false;
-    }
     function isOwn$(o, p) {
       return {}.hasOwnProperty.call(o, p);
     }
