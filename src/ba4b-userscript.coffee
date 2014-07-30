@@ -1,5 +1,5 @@
 libs = 
-  $ : jQuery
+  $ : require('lib/jquery-1.11_1.js')
 
 Downloader = require "util/downloader.coffee"
 defaultConfig = require "config.js"
