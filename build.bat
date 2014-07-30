@@ -18,6 +18,18 @@ if exist node_modules/commonjs-everywhere/lib/command.js (
     echo. >> dist\ba4b-userscript.js
     echo // ba4b-userscript.js %version% %url% >> dist\ba4b-userscript.js
     
+    
+    node node_modules/commonjs-everywhere/lib/command.js ^
+        --export ba4b ^
+        --root src/ ^
+        --source-map dist/ba4b-userscript_min.js.map ^
+        --output dist/ba4b-userscript_min.js ^
+        --inline-sources ^
+        --minify ^
+        ba4b-userscript.coffee
+    echo. >> dist\ba4b-userscript_min.js
+    echo // ba4b-userscript.js %version% %url% >> dist\ba4b-userscript_min.js
+    
     node bin\postCompile.js 
     
     echo build done!

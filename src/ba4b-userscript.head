@@ -3,7 +3,6 @@
 // @namespace      ba4b
 // @description    Better Avatar for Bahamut | 給巴哈姆特一個好看一點的頭像
 // @include        *.gamer.com.tw/*
-// @require        http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js
 // @version        {{version}}
 // @grant          GM_getValue
 // @grant          GM_setValue
