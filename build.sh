@@ -16,6 +16,17 @@ if [ -f node_modules/commonjs-everywhere/lib/command.js ];then
     echo -e "\n" >> dist/ba4b-userscript.js
     echo -n // ba4b-userscript.js ${version} ${url} >> dist/ba4b-userscript.js
     
+    nodejs node_modules/commonjs-everywhere/lib/command.js \
+        --export ba4b \
+        --root src/ \
+        --source-map dist/ba4b-userscript_min.js.map \
+        --output dist/ba4b-userscript_min.js \
+        --inline-sources \
+        --minify \
+        ba4b-userscript.coffee
+    echo -e "\n" >> dist/ba4b-userscript_min.js
+    echo -n // ba4b-userscript.js ${version} ${url} >> dist/ba4b-userscript_min.js
+    
     nodejs bin/postCompile.js 
     
     echo build done!
