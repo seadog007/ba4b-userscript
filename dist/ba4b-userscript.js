@@ -51,17 +51,19 @@
       };
     }();
   require.define('/ba4b-userscript.coffee', function (module, exports, __dirname, __filename) {
-    var defaultConfig, Downloader, ImageChanger, libs, main, Storage;
+    var AjaxHook, defaultConfig, Downloader, ImageChanger, libs, main, Storage;
     libs = { $: require('/lib/jquery-1.11_1.js', module) };
     Downloader = require('/util/downloader.coffee', module);
     defaultConfig = require('/config.js', module);
     ImageChanger = require('/view/image_replacer.coffee', module);
     Storage = require('/util/storage.coffee', module);
+    AjaxHook = require('/view/ajax_hook.coffee', module);
     main = function ($) {
-      var config, downloader, imageChanger, storage;
+      var config, downloader, hook, imageChanger, storage;
       downloader = new Downloader;
       imageChanger = new ImageChanger($);
       downloader.responseType = 'json';
+      hook = new AjaxHook(unsafeWindow, $);
       storage = new Storage(GM_getValue, GM_setValue);
       config = storage.get(config, defaultConfig);
       if (null != storage.get('list') && storage.get('expire') > Date.now()) {
@@ -75,156 +77,70 @@
         });
         downloader.download(config.path);
       }
+      hook.injectHook();
+      hook.on('ajax', function (parent) {
+        return imageChanger.change(storage.get('list', parent));
+      });
       return true;
     };
     if (window === window.top)
       main(libs.$);
   });
-  require.define('/util/storage.coffee', function (module, exports, __dirname, __filename) {
-    var GM_Storage;
-    GM_Storage = function () {
-      function GM_Storage(getMethod, setMethod, namespace) {
-        if (null == namespace)
-          namespace = 'ba4b';
-        this._get = getMethod;
-        this._set = setMethod;
-        this.namespace = namespace;
-        this.cache = null;
-        this._load();
-      }
-      GM_Storage.prototype.set = function (key, value) {
-        this._load();
-        this.cache[key] = value;
-        return this._save();
-      };
-      GM_Storage.prototype.get = function (key, defaultValue) {
-        this._load();
-        if (this.cache[key]) {
-          return this.cache[key];
-        } else if (null != defaultValue) {
-          return defaultValue;
-        } else {
-          return void 0;
-        }
-      };
-      GM_Storage.prototype.remove = function (key) {
-        this._load();
-        delete cache[key];
-        return this._save();
-      };
-      GM_Storage.prototype.reload = function () {
-        return this._load;
-      };
-      GM_Storage.prototype._load = function () {
-        if (GM_getValue(this.namespace)) {
-          return this.cache = JSON.parse(GM_getValue(this.namespace));
-        } else {
-          this.cache = {};
-          return this._save;
-        }
-      };
-      GM_Storage.prototype._save = function () {
-        return GM_setValue(this.namespace, JSON.stringify(this.cache));
-      };
-      return GM_Storage;
-    }();
-    module.exports = GM_Storage;
-  });
-  require.define('/view/image_replacer.coffee', function (module, exports, __dirname, __filename) {
-    var ImageReplacer;
-    ImageReplacer = function () {
-      function ImageReplacer(jQuery) {
-        this.$ = jQuery;
-      }
-      ImageReplacer.prototype.change = function (list) {
-        var format, images, result;
-        images = this.$('img');
-        result = false;
-        format = /http:\/\/avatar2.bahamut.com.tw\/avataruserpic\/\w\/\w\/(\w+)\/.*/g;
-        images = images.filter(function () {
-          var str;
-          str = this.src;
-          return format.test(str);
-        });
-        images.each(function () {
-          var name, str, value;
-          str = this.src;
-          name = str.split('/');
-          name = name[6];
-          for (var i$ = 0, length$ = list.length; i$ < length$; ++i$) {
-            value = list[i$];
-            if (value.BAHA_ID === name) {
-              if (str.search('_s') >= 0) {
-                this.src = 'http://www.gravatar.com/avatar/' + value.HASHED_MAIL + '?s=40';
-              } else {
-                this.src = 'http://www.gravatar.com/avatar/' + value.HASHED_MAIL + '?s=110';
-              }
-              result = true;
-              return true;
-            }
-          }
-          return true;
-        });
-        return true;
-      };
-      return ImageReplacer;
-    }();
-    module.exports = ImageReplacer;
-  });
-  require.define('/config.js', function (module, exports, __dirname, __filename) {
-    var config = {
-        path: 'https://raw.githubusercontent.com/ba4b/ba4b-userscript/master/test/member_list.json',
-        expireTime: '1800'
-      };
-    module.exports = config;
-  });
-  require.define('/util/downloader.coffee', function (module, exports, __dirname, __filename) {
-    var Downloader, EventEmitter;
+  require.define('/view/ajax_hook.coffee', function (module, exports, __dirname, __filename) {
+    var AjaxHook, EventEmitter;
     EventEmitter = require('events', module).EventEmitter;
-    Downloader = function (super$) {
-      extends$(Downloader, super$);
-      function Downloader() {
-        this.locked = false;
-        this.responseType = '';
+    AjaxHook = function (super$) {
+      extends$(AjaxHook, super$);
+      function AjaxHook(param$, param$1) {
+        this.unsafeWindow = param$;
+        this.$ = param$1;
       }
-      Downloader.prototype.download = function (url) {
-        if (this.locked) {
-          console.log('incorrect invoke');
-          return false;
-        }
-        this.locked = true;
-        console.log('download start : ' + url);
-        GM_xmlhttpRequest({
-          url: url,
-          onload: function (this$) {
-            return function (e) {
-              var response;
-              response = e.responseText;
-              console.log('download finish : ' + url);
-              if (this$.responseType === 'json')
-                response = JSON.parse(response);
-              if (!response) {
-                this$.emit('fail', url);
-                return true;
-              }
-              this$.emit('success', response);
-              return true;
-            };
-          }(this),
-          onerror: function (this$) {
-            return function (e) {
-              this$.emit('fail', url);
-              this$.locked = false;
-              return true;
-            };
-          }(this),
-          method: 'GET'
-        });
-        return true;
+      AjaxHook.prototype.injectHook = function () {
+        var guildPattern;
+        guildPattern = /http:\/\/guild\.gamer\.com\.tw\/guild\.php\?sn=.+/g;
+        if (guildPattern.test(window.location.href))
+          return this._injectGuildHook();
       };
-      return Downloader;
+      AjaxHook.prototype._injectGuildHook = function () {
+        var $, killOldHook, newHook, unsafe;
+        console.log('inject hook!');
+        unsafe = this.unsafeWindow;
+        $ = this.$;
+        newHook = function (this$) {
+          return function (replyId, loadBar) {
+            var all;
+            all = loadBar.parentNode;
+            return $.ajax({
+              url: '/ajax/comment.php?a=S&s=' + replyId,
+              method: 'POST',
+              data: 'a=S&s=' + replyId,
+              loading: function () {
+                return loadBar.innerHTML = '<img src="http://i2.bahamut.com.tw/loading.gif">';
+              },
+              success: function (this$1) {
+                return function (result) {
+                  console.log('hook test');
+                  console.log(result);
+                  unsafe.changeDiv('allReply' + replyId, result);
+                  this$1.emit('ajax', all);
+                  return console.log(all);
+                };
+              }(this$)
+            });
+          };
+        }(this);
+        killOldHook = 'javascript:' + encodeURIComponent('readAllReply = function(){};undefined;');
+        window.location.href = killOldHook;
+        return this.$(document).on('click', 'a[onclick^=readAllReply]', null, function () {
+          var id, onclickPattern;
+          onclickPattern = /readAllReply\((\d+),this\.parentNode\)/g;
+          id = onclickPattern.exec($(this).attr('onclick'))[1];
+          return newHook(id, this.wrappedJSObject.parentNode);
+        });
+      };
+      return AjaxHook;
     }(EventEmitter);
-    module.exports = Downloader;
+    module.exports = AjaxHook;
     function isOwn$(o, p) {
       return {}.hasOwnProperty.call(o, p);
     }
@@ -373,6 +289,201 @@
       }
       return this._events[type];
     };
+  });
+  require.define('/util/storage.coffee', function (module, exports, __dirname, __filename) {
+    var GM_Storage;
+    GM_Storage = function () {
+      function GM_Storage(getMethod, setMethod, namespace) {
+        if (null == namespace)
+          namespace = 'ba4b';
+        this._get = getMethod;
+        this._set = setMethod;
+        this.namespace = namespace;
+        this.cache = null;
+        this._load();
+      }
+      GM_Storage.prototype.set = function (key, value) {
+        this._load();
+        this.cache[key] = value;
+        return this._save();
+      };
+      GM_Storage.prototype.get = function (key, defaultValue) {
+        this._load();
+        if (this.cache[key]) {
+          return this.cache[key];
+        } else if (null != defaultValue) {
+          return defaultValue;
+        } else {
+          return void 0;
+        }
+      };
+      GM_Storage.prototype.remove = function (key) {
+        this._load();
+        delete cache[key];
+        return this._save();
+      };
+      GM_Storage.prototype.reload = function () {
+        return this._load;
+      };
+      GM_Storage.prototype._load = function () {
+        if (GM_getValue(this.namespace)) {
+          return this.cache = JSON.parse(GM_getValue(this.namespace));
+        } else {
+          this.cache = {};
+          return this._save;
+        }
+      };
+      GM_Storage.prototype._save = function () {
+        return GM_setValue(this.namespace, JSON.stringify(this.cache));
+      };
+      return GM_Storage;
+    }();
+    module.exports = GM_Storage;
+    function isOwn$(o, p) {
+      return {}.hasOwnProperty.call(o, p);
+    }
+    function extends$(child, parent) {
+      for (var key in parent)
+        if (isOwn$(parent, key))
+          child[key] = parent[key];
+      function ctor() {
+        this.constructor = child;
+      }
+      ctor.prototype = parent.prototype;
+      child.prototype = new ctor;
+      child.__super__ = parent.prototype;
+      return child;
+    }
+  });
+  require.define('/view/image_replacer.coffee', function (module, exports, __dirname, __filename) {
+    var ImageReplacer;
+    ImageReplacer = function () {
+      function ImageReplacer(jQuery) {
+        this.$ = jQuery;
+      }
+      ImageReplacer.prototype.change = function (list, parent) {
+        var format, images, result;
+        if (null != parent) {
+          images = this.$(parent).find('img');
+        } else {
+          images = this.$('img');
+        }
+        result = false;
+        format = /http:\/\/avatar2.bahamut.com.tw\/avataruserpic\/\w\/\w\/(\w+)\/.*/g;
+        images = images.filter(function () {
+          var str;
+          str = this.src;
+          return format.test(str);
+        });
+        images.each(function () {
+          var name, str, value;
+          str = this.src;
+          name = str.split('/');
+          name = name[6];
+          for (var i$ = 0, length$ = list.length; i$ < length$; ++i$) {
+            value = list[i$];
+            if (value.BAHA_ID === name) {
+              if (str.search('_s') >= 0) {
+                this.src = 'http://www.gravatar.com/avatar/' + value.HASHED_MAIL + '?s=40';
+              } else {
+                this.src = 'http://www.gravatar.com/avatar/' + value.HASHED_MAIL + '?s=110';
+              }
+              result = true;
+              return true;
+            }
+          }
+          return true;
+        });
+        return true;
+      };
+      return ImageReplacer;
+    }();
+    module.exports = ImageReplacer;
+    function isOwn$(o, p) {
+      return {}.hasOwnProperty.call(o, p);
+    }
+    function extends$(child, parent) {
+      for (var key in parent)
+        if (isOwn$(parent, key))
+          child[key] = parent[key];
+      function ctor() {
+        this.constructor = child;
+      }
+      ctor.prototype = parent.prototype;
+      child.prototype = new ctor;
+      child.__super__ = parent.prototype;
+      return child;
+    }
+  });
+  require.define('/config.js', function (module, exports, __dirname, __filename) {
+    var config = {
+        path: 'https://raw.githubusercontent.com/ba4b/ba4b-userscript/master/test/member_list.json',
+        expireTime: '1800'
+      };
+    module.exports = config;
+  });
+  require.define('/util/downloader.coffee', function (module, exports, __dirname, __filename) {
+    var Downloader, EventEmitter;
+    EventEmitter = require('events', module).EventEmitter;
+    Downloader = function (super$) {
+      extends$(Downloader, super$);
+      function Downloader() {
+        this.locked = false;
+        this.responseType = '';
+      }
+      Downloader.prototype.download = function (url) {
+        if (this.locked) {
+          console.log('incorrect invoke');
+          return false;
+        }
+        this.locked = true;
+        console.log('download start : ' + url);
+        GM_xmlhttpRequest({
+          url: url,
+          onload: function (this$) {
+            return function (e) {
+              var response;
+              response = e.responseText;
+              console.log('download finish : ' + url);
+              if (this$.responseType === 'json')
+                response = JSON.parse(response);
+              if (!response) {
+                this$.emit('fail', url);
+                return true;
+              }
+              this$.emit('success', response);
+              return true;
+            };
+          }(this),
+          onerror: function (this$) {
+            return function (e) {
+              this$.emit('fail', url);
+              this$.locked = false;
+              return true;
+            };
+          }(this),
+          method: 'GET'
+        });
+        return true;
+      };
+      return Downloader;
+    }(EventEmitter);
+    module.exports = Downloader;
+    function isOwn$(o, p) {
+      return {}.hasOwnProperty.call(o, p);
+    }
+    function extends$(child, parent) {
+      for (var key in parent)
+        if (isOwn$(parent, key))
+          child[key] = parent[key];
+      function ctor() {
+        this.constructor = child;
+      }
+      ctor.prototype = parent.prototype;
+      child.prototype = new ctor;
+      child.__super__ = parent.prototype;
+      return child;
+    }
   });
   require.define('/lib/jquery-1.11_1.js', function (module, exports, __dirname, __filename) {
     (function (global, factory) {

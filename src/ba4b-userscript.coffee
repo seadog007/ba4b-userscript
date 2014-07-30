@@ -5,6 +5,7 @@ Downloader = require "util/downloader.coffee"
 defaultConfig = require "config.js"
 ImageChanger = require "view/image_replacer.coffee"
 Storage = require "util/storage.coffee"
+AjaxHook = require "view/ajax_hook.coffee"
 ###
 list format
 {
@@ -26,6 +27,7 @@ main = ($)->
   downloader = new Downloader
   imageChanger = new ImageChanger $
   downloader.responseType = "json"
+  hook = new AjaxHook unsafeWindow, $
   storage = new Storage(GM_getValue, GM_setValue)
   #console.log storage
   #console.log storage.get 'expire'
@@ -33,7 +35,7 @@ main = ($)->
   config = storage.get config, defaultConfig
   
   if (storage.get "list")? and (storage.get 'expire') > Date.now()
-    imageChanger.change storage.get("list")
+    imageChanger.change storage.get "list"
   else
     downloader.on "success", (obj)->
       imageChanger.change obj.list
@@ -43,6 +45,11 @@ main = ($)->
       
       return true
     downloader.download config.path
+  
+  hook.injectHook()
+  hook.on 'ajax', (parent)->
+    imageChanger.change storage.get "list", parent
+  
   return true
 
 if window is window.top
