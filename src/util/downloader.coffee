@@ -29,9 +29,14 @@ class Downloader extends EventEmitter
           return true
         
         @emit 'success',response
+        @removeAllListeners 'success'
+        @removeAllListeners 'fail'
+        @locked = false
         return true
       onerror : (e)=>
         @emit 'fail', url
+        @removeAllListeners 'success'
+        @removeAllListeners 'fail'
         @locked = false
         return true
       method : "GET"
