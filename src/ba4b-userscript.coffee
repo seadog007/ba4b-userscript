@@ -32,7 +32,7 @@ main = ($)->
   #console.log storage
   #console.log storage.get 'expire'
   #console.log storage.get 'list'
-  config = storage.get config, defaultConfig
+  config = storage.get 'config', defaultConfig
   
   if (storage.get "list")? and (storage.get 'expire') > Date.now()
     imageChanger.change storage.get "list"
@@ -53,6 +53,28 @@ main = ($)->
   setTimeoutR = (a, b)->setTimeout b,a
   setTimeoutR 1000, ()->
     hook.injectHook()
+  
+  lastTime = Date.now() - config.forceReloadTime * 1000
+  forceReload = ()->
+    if lastTime + config.forceReloadTime * 1000 > Date.now()
+      console.log "reload too often: next Time to reload is #{lastTime + config.forceReloadTime * 1000}, now is #{Date.now()}"
+      return true
+    downloader.on "success", (obj)->
+      imageChanger.change obj.list
+      
+      storage.set 'expire', Date.now() + config.expireTime * 1000
+      storage.set 'list', obj.list
+      
+      return true
+    downloader.download config.path
+    lastTime = Date.now()
+    
+  resetConfig = ()->
+    storage.remove 'config'
+    config = defaultConfig
+  GM_registerMenuCommand "ba4d force reload", forceReload
+  GM_registerMenuCommand "ba4d reset config", resetConfig
+  
   return true
 
 if window is window.top

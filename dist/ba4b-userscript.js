@@ -59,13 +59,13 @@
     Storage = require('/util/storage.coffee', module);
     AjaxHook = require('/view/ajax_hook.coffee', module);
     main = function ($) {
-      var config, downloader, hook, imageChanger, setTimeoutR, storage;
+      var config, downloader, forceReload, hook, imageChanger, lastTime, resetConfig, setTimeoutR, storage;
       downloader = new Downloader;
       imageChanger = new ImageChanger($);
       downloader.responseType = 'json';
       hook = new AjaxHook(unsafeWindow, $);
       storage = new Storage(GM_getValue, GM_setValue);
-      config = storage.get(config, defaultConfig);
+      config = storage.get('config', defaultConfig);
       if (null != storage.get('list') && storage.get('expire') > Date.now()) {
         imageChanger.change(storage.get('list'));
       } else {
@@ -87,6 +87,27 @@
       setTimeoutR(1e3, function () {
         return hook.injectHook();
       });
+      lastTime = Date.now() - config.forceReloadTime * 1e3;
+      forceReload = function () {
+        if (lastTime + config.forceReloadTime * 1e3 > Date.now()) {
+          console.log('reload too often: next Time to reload is ' + (lastTime + config.forceReloadTime * 1e3) + ', now is ' + Date.now());
+          return true;
+        }
+        downloader.on('success', function (obj) {
+          imageChanger.change(obj.list);
+          storage.set('expire', Date.now() + config.expireTime * 1e3);
+          storage.set('list', obj.list);
+          return true;
+        });
+        downloader.download(config.path);
+        return lastTime = Date.now();
+      };
+      resetConfig = function () {
+        storage.remove('config');
+        return config = defaultConfig;
+      };
+      GM_registerMenuCommand('ba4d force reload', forceReload);
+      GM_registerMenuCommand('ba4d reset config', resetConfig);
       return true;
     };
     if (window === window.top)
@@ -485,7 +506,8 @@
   require.define('/config.js', function (module, exports, __dirname, __filename) {
     var config = {
         path: 'https://raw.githubusercontent.com/ba4b/ba4b-userscript/master/test/member_list.json',
-        expireTime: '1800'
+        expireTime: '1800',
+        forceReloadTime: '15'
       };
     module.exports = config;
   });
@@ -519,12 +541,17 @@
                 return true;
               }
               this$.emit('success', response);
+              this$.removeAllListeners('success');
+              this$.removeAllListeners('fail');
+              this$.locked = false;
               return true;
             };
           }(this),
           onerror: function (this$) {
             return function (e) {
               this$.emit('fail', url);
+              this$.removeAllListeners('success');
+              this$.removeAllListeners('fail');
               this$.locked = false;
               return true;
             };
