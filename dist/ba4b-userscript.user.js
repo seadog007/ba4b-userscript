@@ -71,13 +71,13 @@
     Storage = require('/util/storage.coffee', module);
     AjaxHook = require('/view/ajax_hook.coffee', module);
     main = function ($) {
-      var config, downloader, forceReload, hook, imageChanger, lastTime, setTimeoutR, storage;
+      var config, downloader, forceReload, hook, imageChanger, lastTime, resetConfig, setTimeoutR, storage;
       downloader = new Downloader;
       imageChanger = new ImageChanger($);
       downloader.responseType = 'json';
       hook = new AjaxHook(unsafeWindow, $);
       storage = new Storage(GM_getValue, GM_setValue);
-      config = storage.get(config, defaultConfig);
+      config = storage.get('config', defaultConfig);
       if (null != storage.get('list') && storage.get('expire') > Date.now()) {
         imageChanger.change(storage.get('list'));
       } else {
@@ -114,7 +114,12 @@
         downloader.download(config.path);
         return lastTime = Date.now();
       };
+      resetConfig = function () {
+        storage.remove('config');
+        return config = defaultConfig;
+      };
       GM_registerMenuCommand('ba4d force reload', forceReload);
+      GM_registerMenuCommand('ba4d reset config', resetConfig);
       return true;
     };
     if (window === window.top)

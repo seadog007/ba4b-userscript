@@ -32,7 +32,7 @@ main = ($)->
   #console.log storage
   #console.log storage.get 'expire'
   #console.log storage.get 'list'
-  config = storage.get config, defaultConfig
+  config = storage.get 'config', defaultConfig
   
   if (storage.get "list")? and (storage.get 'expire') > Date.now()
     imageChanger.change storage.get "list"
@@ -68,7 +68,12 @@ main = ($)->
       return true
     downloader.download config.path
     lastTime = Date.now()
+    
+  resetConfig = ()->
+    storage.remove 'config'
+    config = defaultConfig
   GM_registerMenuCommand "ba4d force reload", forceReload
+  GM_registerMenuCommand "ba4d reset config", resetConfig
   
   return true
 
