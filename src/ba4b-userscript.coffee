@@ -46,10 +46,13 @@ main = ($)->
       return true
     downloader.download config.path
   
-  hook.injectHook()
   hook.on 'ajax', (parent)->
+    console.log "update ajax hook!"
     imageChanger.change storage.get "list", parent
   
+  setTimeoutR = (a, b)->setTimeout b,a
+  setTimeoutR 1000, ()->
+    hook.injectHook()
   return true
 
 if window is window.top
