@@ -141,7 +141,7 @@
           return this._injectGuildHook();
       };
       AjaxHook.prototype._injectGuildHook = function () {
-        var $, killOldHook, newHook, newHook_readMore, unsafe;
+        var $, killOldHook, newHook, unsafe;
         console.log('inject hook!');
         unsafe = this.unsafeWindow;
         $ = this.$;
@@ -168,62 +168,7 @@
             });
           };
         }(this);
-        newHook_readMore = function (this$) {
-          return function (a) {
-            var a$, b, c, d, i, t;
-            a$ = a;
-            i = void 0;
-            b = void 0;
-            c = void 0;
-            d = void 0;
-            t = void 0;
-            if (unsafe.point_now < unsafe.total_ary) {
-              a = unsafe.point_now;
-              b = unsafe.buildMsgAndReply3();
-              document.getElementById('noMsg').style.display = 'none';
-              document.getElementById('readMore').innerHTML += b;
-              i = a;
-              while (i < unsafe.point_now && i < unsafe.total_ary) {
-                unsafe.changetxt('m-' + unsafe.msgArr[i].sn);
-                i++;
-              }
-              this$.emit('ajax');
-            } else {
-              document.getElementById('moreBtn').disabled = !0;
-              b = unsafe.getCookie('BAHAID');
-              c = '';
-              d = '';
-              t = document.getElementById('lastTime').value;
-              if (1 < (new Date - new Date(t.substr(0, 4), t.substr(5, 2) - 1, t.substr(8, 2), t.substr(11, 2), t.substr(14, 2), t.substr(17, 2))) / 7776e6) {
-                alert('\u60A8\u6C92\u6709\u66F4\u820A\u7684\u52D5\u614B\u4E86\uFF01');
-                document.getElementById('moreBtn').disabled = false;
-              } else {
-                unsafe.r = document.getElementById('daysRange').value;
-                if (a.toLowerCase() === b.toLowerCase()) {
-                  c = '/ajax/getMoreMsg.php';
-                  d = 't=' + t + '&r=' + unsafe.r + '&k=' + unsafe.k + '&auto=' + document.getElementById('autoReadMore').value + '&lastGetSn=' + document.getElementById('lastGetSn').value;
-                } else {
-                  c = '/ajax/othersMoreMsg.php';
-                  d = 't=' + t + '&r=' + unsafe.r + '&u=' + a + '&k=' + unsafe.k + '&lastGetSn=' + document.getElementById('lastGetSn').value;
-                }
-                $.ajax({
-                  url: c,
-                  method: 'POST',
-                  data: d,
-                  success: function (this$1) {
-                    return function (a) {
-                      console.log(unsafe.showActiveDiv.call(unsafe, 'readMore', a));
-                      newHook_readMore(a$);
-                      console.log(a);
-                      this$1.emit('ajax');
-                    };
-                  }(this$)
-                });
-              }
-            }
-          };
-        }(this);
-        killOldHook = 'javascript:' + encodeURIComponent('readAllReply = function(){};readMore = function(){};undefined;');
+        killOldHook = 'javascript:' + encodeURIComponent('readAllReply = function(){};undefined;');
         window.location.href = killOldHook;
         this.$(document).on('click', 'a[onclick^=readAllReply]', null, function () {
           var id, onclickPattern;
@@ -231,12 +176,19 @@
           id = onclickPattern.exec($(this).attr('onclick'))[1];
           return newHook(id, this.wrappedJSObject.parentNode);
         });
-        return this.$(document).on('click', 'button[onclick^=readMore]', null, function () {
-          var id, onclickPattern;
-          onclickPattern = /readMore\('(#GID\d+)'\);/g;
-          id = onclickPattern.exec($(this).attr('onclick'))[1];
-          return newHook_readMore(id);
-        });
+        return this.$(document).on('click', 'button[onclick^=readMore]', null, function (this$) {
+          return function () {
+            var setTimeoutR;
+            setTimeoutR = function (a, b) {
+              return setTimeout(b, a);
+            };
+            return setTimeoutR(5e3, function (this$1) {
+              return function () {
+                return this$1.emit('ajax');
+              };
+            }(this$));
+          };
+        }(this));
       };
       return AjaxHook;
     }(EventEmitter);

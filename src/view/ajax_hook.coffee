@@ -32,6 +32,7 @@ class AjaxHook extends EventEmitter
           
           @emit 'ajax', all
           console.log all
+    ###
     # idk the variable name, it's auto generate stuff, baha sucks
     newHook_readMore = (a) =>
       a$ = a
@@ -72,26 +73,28 @@ class AjaxHook extends EventEmitter
             method: "POST"
             data: d
             success: (a) =>
-              console.log unsafe.showActiveDiv.call unsafe, "readMore", a
-              ###
-              hacky fix
-              TODO :
-                find a correct fix
-              ###
-              newHook_readMore a$
+              unsafe.showActiveDiv.call unsafe, "readMore", a
               console.log a
               @emit 'ajax'
               return
       return
-    killOldHook = "javascript:" + encodeURIComponent("readAllReply = function(){};readMore = function(){};undefined;")
+    ###
+    #killOldHook = "javascript:" + encodeURIComponent("readAllReply = function(){};readMore = function(){};undefined;")
+    killOldHook = "javascript:" + encodeURIComponent("readAllReply = function(){};undefined;")
     window.location.href = killOldHook;
     (@$ document).on 'click', 'a[onclick^=readAllReply]', null, ->
       onclickPattern = /readAllReply\((\d+),this\.parentNode\)/g
       id = (onclickPattern.exec ($ this).attr 'onclick' )[1]
       newHook id, this.wrappedJSObject.parentNode
-    (@$ document).on 'click', 'button[onclick^=readMore]', null, ->
+    ###(@$ document).on 'click', 'button[onclick^=readMore]', null, ->
       onclickPattern = /readMore\('(#GID\d+)'\);/g
       id = (onclickPattern.exec ($ this).attr 'onclick' )[1]
       newHook_readMore id
+    ###
+    # it's temp fix, who cares?
+    (@$ document).on 'click', 'button[onclick^=readMore]', null, =>
+      setTimeoutR = (a,b)->setTimeout b,a
+      setTimeoutR 5000, ()=>
+        @emit 'ajax'
     
 module.exports = AjaxHook
