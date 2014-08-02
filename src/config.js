@@ -1,5 +1,5 @@
 var config = {
-    path : "https://raw.githubusercontent.com/ba4b/ba4b-userscript/master/test/member_list.json",
+    path : "http://ba4b.net/API/memberls.php",
     expireTime : "1800" /*in second*/,
     forceReloadTime : "15" /*in second*/
 };

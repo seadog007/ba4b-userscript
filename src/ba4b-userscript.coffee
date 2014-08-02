@@ -101,6 +101,13 @@ class Ba4b
       storage.remove 'config'
     @config = storage.get 'config', @defaultConfig
   
+  setConfig: (property, value)->
+    @config[property] = value
+    storage.set 'config', @config
+  
+  getConfig: (property)->
+    (storage.get 'config')[property]
+  
   downloadNewList: ()->
     downloader.responseType = 'json'
     downloader.on "success", (obj)=>
@@ -133,22 +140,34 @@ if window is window.top
     console.log "reset config!"
     ba4b.loadConfig(true)
   
-  reDownloadList = ()->
+  redownloadList = ()->
     console.log "redownload list!"
     ba4b.downloadNewList()
-    
+  
+  setConfig = (prop, val)->
+    ba4b.setConfig(prop, val)
+  
+  getConfig = (prop)->
+    ba4b.getConfig(prop)
+  
   if cloneInto? && exportFunction?
     try
       unsafeWindow.ba4b = cloneInto {}, unsafeWindow
       exportFunction triggerAjax, unsafeWindow.ba4b, defineAs: "updateImageIn"
       exportFunction resetConfig, unsafeWindow.ba4b, defineAs: "resetConfig"
-      exportFunction reDownloadList, unsafeWindow.ba4b, defineAs: "reDownload"
+      exportFunction redownloadList, unsafeWindow.ba4b, defineAs: "redownloadList"
+      exportFunction setConfig, unsafeWindow.ba4b, defineAs: "setConfig"
+      exportFunction getConfig, unsafeWindow.ba4b, defineAs: "getConfig"
       
     catch
   else
     unsafeWindow.ba4b = 
       updateImageIn : triggerAjax
+      resetConfig : resetConfig
+      redownloadList : redownloadList
+      setConfig : setConfig
+      getConfig : getConfig
   
-  GM_registerMenuCommand "ba4b : update list now", reDownloadList
+  GM_registerMenuCommand "ba4b : update list now", redownloadList
   GM_registerMenuCommand "ba4b : reset config", resetConfig
   

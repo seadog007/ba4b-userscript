@@ -51,7 +51,7 @@
       };
     }();
   require.define('/ba4b-userscript.coffee', function (module, exports, __dirname, __filename) {
-    var $, AjaxHook, ba4b, Ba4b, defaultConfig, Downloader, downloader, hook, ImageChanger, imageChanger, reDownloadList, resetConfig, Storage, storage, triggerAjax;
+    var $, AjaxHook, ba4b, Ba4b, defaultConfig, downloader, Downloader, getConfig, hook, imageChanger, ImageChanger, redownloadList, resetConfig, setConfig, storage, Storage, triggerAjax;
     $ = require('/lib/jquery-1.11_1.js', module).noConflict();
     Downloader = require('/util/downloader.coffee', module);
     defaultConfig = require('/config.js', module);
@@ -95,6 +95,13 @@
           storage.remove('config');
         return this.config = storage.get('config', this.defaultConfig);
       };
+      Ba4b.prototype.setConfig = function (property, value) {
+        this.config[property] = value;
+        return storage.set('config', this.config);
+      };
+      Ba4b.prototype.getConfig = function (property) {
+        return storage.get('config')[property];
+      };
       Ba4b.prototype.downloadNewList = function () {
         downloader.responseType = 'json';
         downloader.on('success', function (this$) {
@@ -128,23 +135,37 @@
         console.log('reset config!');
         return ba4b.loadConfig(true);
       };
-      reDownloadList = function () {
+      redownloadList = function () {
         console.log('redownload list!');
         return ba4b.downloadNewList();
+      };
+      setConfig = function (prop, val) {
+        return ba4b.setConfig(prop, val);
+      };
+      getConfig = function (prop) {
+        return ba4b.getConfig(prop);
       };
       if ('undefined' !== typeof cloneInto && null != cloneInto && ('undefined' !== typeof exportFunction && null != exportFunction)) {
         try {
           unsafeWindow.ba4b = cloneInto({}, unsafeWindow);
           exportFunction(triggerAjax, unsafeWindow.ba4b, { defineAs: 'updateImageIn' });
           exportFunction(resetConfig, unsafeWindow.ba4b, { defineAs: 'resetConfig' });
-          exportFunction(reDownloadList, unsafeWindow.ba4b, { defineAs: 'reDownload' });
+          exportFunction(redownloadList, unsafeWindow.ba4b, { defineAs: 'redownloadList' });
+          exportFunction(setConfig, unsafeWindow.ba4b, { defineAs: 'setConfig' });
+          exportFunction(getConfig, unsafeWindow.ba4b, { defineAs: 'getConfig' });
         } catch (e$) {
           ;
         }
       } else {
-        unsafeWindow.ba4b = { updateImageIn: triggerAjax };
+        unsafeWindow.ba4b = {
+          updateImageIn: triggerAjax,
+          resetConfig: resetConfig,
+          redownloadList: redownloadList,
+          setConfig: setConfig,
+          getConfig: getConfig
+        };
       }
-      GM_registerMenuCommand('ba4b : update list now', reDownloadList);
+      GM_registerMenuCommand('ba4b : update list now', redownloadList);
       GM_registerMenuCommand('ba4b : reset config', resetConfig);
     }
   });
@@ -371,7 +392,7 @@
       };
       GM_Storage.prototype.remove = function (key) {
         this._load();
-        delete cache[key];
+        delete this.cache[key];
         return this._save();
       };
       GM_Storage.prototype.reload = function () {
@@ -382,7 +403,7 @@
           return this.cache = JSON.parse(GM_getValue(this.namespace));
         } else {
           this.cache = {};
-          return this._save;
+          return this._save();
         }
       };
       GM_Storage.prototype._save = function () {
@@ -469,7 +490,7 @@
   });
   require.define('/config.js', function (module, exports, __dirname, __filename) {
     var config = {
-        path: 'https://raw.githubusercontent.com/ba4b/ba4b-userscript/master/test/member_list.json',
+        path: 'http://ba4b.net/API/memberls.php',
         expireTime: '1800',
         forceReloadTime: '15'
       };
