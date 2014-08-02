@@ -2,7 +2,7 @@ class ImageReplacer
   constructor: (jQuery)->
     @$ = jQuery
   
-  change: (list, parent)->
+  change: (map, parent)->
     if parent?
       images = (@$ parent).find 'img'
     else
@@ -22,7 +22,7 @@ class ImageReplacer
         return true
       ###
       name = name[6]
-      
+      ###
       for value in list
         if value.BAHA_ID is name
           if str.search("_s") >= 0
@@ -31,8 +31,15 @@ class ImageReplacer
             this.src = "http:\/\/www.gravatar.com\/avatar\/#{value.HASHED_MAIL}?s=110"
           result = true
           return true
-          
+      ###
+      
+      if map[name]?
+        if str.search("_s") >= 0
+          this.src = map[name].head
+        else
+          this.src = map[name].full
       return true
+    
     return true
 
 
