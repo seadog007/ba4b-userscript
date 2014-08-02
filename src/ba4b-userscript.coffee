@@ -5,7 +5,8 @@ ImageChanger = require "view/image_replacer.coffee"
 Storage = require "util/storage.coffee"
 AjaxHook = require "view/ajax_hook.coffee"
 
-#UrlCreater = require "util/urlcreater.coffee"
+UrlCreater = require "util/urlcreater.coffee"
+
 ###
 list format
 {
@@ -79,23 +80,26 @@ main = ($)->
   return true
   ###
 class Ba4b
-  constructor: (@downloader, @defaultConfig, @imageChanger, @storage, @ajaxHook, @GM_registerMenuCommand)->
+  constructor: (@downloader, @defaultConfig, @imageChanger, @storage, @ajaxHook, @GM_registerMenuCommand, @urlCreater)->
     @config = null
     @loadConfig()
     @_init()
   
   _init: ->
-    if (@storage.get "list")? and !@isListExpired()
-      @changeImage storage.get "list"
+    if (@storage.get "map")? and !@isListExpired()
+      @changeImage storage.get "map"
     else
-      console.log "out date list: #{@storage.get 'expire'} \n now is #{Date.now()}"
+      console.log "out date map: #{@storage.get 'expire'} \n now is #{Date.now()}"
       @downloadNewList()
     setTimeoutR = (a, b)-> setTimeout b, a
     setTimeoutR 1000, ()=>
       @ajaxHook.injectHook()
   isListExpired: ->
     return (@storage.get 'expire') < Date.now()
-    
+  
+  resetAll: ()->
+    storage.removeAll()
+  
   loadConfig: (reset)->
     if reset
       storage.remove 'config'
@@ -112,25 +116,30 @@ class Ba4b
     downloader.responseType = 'json'
     downloader.on "success", (obj)=>
     
-      @storage.set 'expire', Date.now() + @config.expireTime * 1000
-      @storage.set 'list', obj.list
-      @imageChanger.change obj.list
       
+      @urlCreater.on 'done', (urlMap)=>
+        @storage.set 'map', urlMap
+        @storage.set 'expire', Date.now() + @config.expireTime * 1000
+        @imageChanger.change urlMap
+        return true
+      @urlCreater.create obj.list
+        
       return true
     downloader.download @config.path
   
-  changeImage: (list, conatiner)->
-    if !list?
-      list = storage.get 'list'
-    imageChanger.change list
+  changeImage: (map, conatiner)->
+    if !map?
+      map = storage.get 'map'
+    imageChanger.change map
 
 if window is window.top
   storage = new Storage GM_getValue, GM_setValue
   downloader = new Downloader
   imageChanger = new ImageChanger $
   hook = new AjaxHook window, $
+  urlCreater = new UrlCreater
   
-  ba4b = new Ba4b downloader, defaultConfig, imageChanger, storage, hook, GM_registerMenuCommand
+  ba4b = new Ba4b downloader, defaultConfig, imageChanger, storage, hook, GM_registerMenuCommand, urlCreater
   
   triggerAjax = (container)->
     console.log "update ajax call!"
@@ -150,6 +159,9 @@ if window is window.top
   getConfig = (prop)->
     ba4b.getConfig(prop)
   
+  resetAll = ()->
+    ba4b.resetAll()
+  
   if cloneInto? && exportFunction?
     try
       unsafeWindow.ba4b = cloneInto {}, unsafeWindow
@@ -158,6 +170,7 @@ if window is window.top
       exportFunction redownloadList, unsafeWindow.ba4b, defineAs: "redownloadList"
       exportFunction setConfig, unsafeWindow.ba4b, defineAs: "setConfig"
       exportFunction getConfig, unsafeWindow.ba4b, defineAs: "getConfig"
+      exportFunction resetAll, unsafeWindow.ba4b, defineAs: "resetAll"
       
     catch
   else
@@ -167,7 +180,8 @@ if window is window.top
       redownloadList : redownloadList
       setConfig : setConfig
       getConfig : getConfig
+      resetAll : resetAll
   
   GM_registerMenuCommand "ba4b : update list now", redownloadList
-  GM_registerMenuCommand "ba4b : reset config", resetConfig
+  GM_registerMenuCommand "ba4b : reset config", resetAll
   

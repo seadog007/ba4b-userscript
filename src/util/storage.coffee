@@ -27,7 +27,11 @@ class GM_Storage
     @_load()
     delete @cache[key]
     @_save()
-
+  
+  removeAll: ()->
+    @cache = {}
+    @_save()
+  
   #use when storage was modified by another program
   reload: ()->
     @_load
