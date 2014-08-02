@@ -25,7 +25,7 @@ class GM_Storage
   remove: (key)->
     #make sure always get newest value
     @_load()
-    delete cache[key]
+    delete @cache[key]
     @_save()
 
   #use when storage was modified by another program
@@ -37,7 +37,7 @@ class GM_Storage
       @cache = JSON.parse GM_getValue @namespace
     else
       @cache = {}
-      @_save
+      @_save()
 
   _save: ()->
     GM_setValue @namespace, JSON.stringify @cache
