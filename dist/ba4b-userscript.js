@@ -51,71 +51,111 @@
       };
     }();
   require.define('/ba4b-userscript.coffee', function (module, exports, __dirname, __filename) {
-    var AjaxHook, defaultConfig, Downloader, ImageChanger, libs, main, Storage;
-    libs = { $: require('/lib/jquery-1.11_1.js', module) };
+    var $, AjaxHook, ba4b, Ba4b, defaultConfig, Downloader, downloader, hook, ImageChanger, imageChanger, reDownloadList, resetConfig, Storage, storage, triggerAjax;
+    $ = require('/lib/jquery-1.11_1.js', module).noConflict();
     Downloader = require('/util/downloader.coffee', module);
     defaultConfig = require('/config.js', module);
     ImageChanger = require('/view/image_replacer.coffee', module);
     Storage = require('/util/storage.coffee', module);
     AjaxHook = require('/view/ajax_hook.coffee', module);
-    main = function ($) {
-      var config, downloader, forceReload, hook, imageChanger, lastTime, resetConfig, setTimeoutR, storage;
+    Ba4b = function () {
+      function Ba4b(param$, param$1, param$2, param$3, param$4, param$5) {
+        this.downloader = param$;
+        this.defaultConfig = param$1;
+        this.imageChanger = param$2;
+        this.storage = param$3;
+        this.ajaxHook = param$4;
+        this.GM_registerMenuCommand = param$5;
+        this.config = null;
+        this.loadConfig();
+        this._init();
+      }
+      Ba4b.prototype._init = function () {
+        var setTimeoutR;
+        if (null != this.storage.get('list') && !this.isListExpired()) {
+          this.changeImage(storage.get('list'));
+        } else {
+          console.log('out date list: ' + this.storage.get('expire') + ' \n now is ' + Date.now());
+          this.downloadNewList();
+        }
+        setTimeoutR = function (a, b) {
+          return setTimeout(b, a);
+        };
+        return setTimeoutR(1e3, function (this$) {
+          return function () {
+            return this$.ajaxHook.injectHook();
+          };
+        }(this));
+      };
+      Ba4b.prototype.isListExpired = function () {
+        return this.storage.get('expire') < Date.now();
+      };
+      Ba4b.prototype.loadConfig = function (reset) {
+        if (reset)
+          storage.remove('config');
+        return this.config = storage.get('config', this.defaultConfig);
+      };
+      Ba4b.prototype.downloadNewList = function () {
+        downloader.responseType = 'json';
+        downloader.on('success', function (this$) {
+          return function (obj) {
+            this$.storage.set('expire', Date.now() + this$.config.expireTime * 1e3);
+            this$.storage.set('list', obj.list);
+            this$.imageChanger.change(obj.list);
+            return true;
+          };
+        }(this));
+        return downloader.download(this.config.path);
+      };
+      Ba4b.prototype.changeImage = function (list, conatiner) {
+        if (!(null != list))
+          list = storage.get('list');
+        return imageChanger.change(list);
+      };
+      return Ba4b;
+    }();
+    if (window === window.top) {
+      storage = new Storage(GM_getValue, GM_setValue);
       downloader = new Downloader;
       imageChanger = new ImageChanger($);
-      downloader.responseType = 'json';
-      hook = new AjaxHook(unsafeWindow, $);
-      storage = new Storage(GM_getValue, GM_setValue);
-      config = storage.get('config', defaultConfig);
-      if (null != storage.get('list') && storage.get('expire') > Date.now()) {
-        imageChanger.change(storage.get('list'));
-      } else {
-        downloader.on('success', function (obj) {
-          imageChanger.change(obj.list);
-          storage.set('expire', Date.now() + config.expireTime * 1e3);
-          storage.set('list', obj.list);
-          return true;
-        });
-        downloader.download(config.path);
-      }
-      hook.on('ajax', function (parent) {
-        console.log('update ajax hook!');
-        return imageChanger.change(storage.get('list', parent));
-      });
-      setTimeoutR = function (a, b) {
-        return setTimeout(b, a);
-      };
-      setTimeoutR(1e3, function () {
-        return hook.injectHook();
-      });
-      lastTime = Date.now() - config.forceReloadTime * 1e3;
-      forceReload = function () {
-        if (lastTime + config.forceReloadTime * 1e3 > Date.now()) {
-          console.log('reload too often: next Time to reload is ' + (lastTime + config.forceReloadTime * 1e3) + ', now is ' + Date.now());
-          return true;
-        }
-        downloader.on('success', function (obj) {
-          imageChanger.change(obj.list);
-          storage.set('expire', Date.now() + config.expireTime * 1e3);
-          storage.set('list', obj.list);
-          return true;
-        });
-        downloader.download(config.path);
-        return lastTime = Date.now();
+      hook = new AjaxHook(window, $);
+      ba4b = new Ba4b(downloader, defaultConfig, imageChanger, storage, hook, GM_registerMenuCommand);
+      triggerAjax = function (container) {
+        console.log('update ajax call!');
+        return ba4b.changeImage(container);
       };
       resetConfig = function () {
-        storage.remove('config');
-        return config = defaultConfig;
+        console.log('reset config!');
+        return ba4b.loadConfig(true);
       };
-      GM_registerMenuCommand('ba4d force reload', forceReload);
-      GM_registerMenuCommand('ba4d reset config', resetConfig);
-      return true;
-    };
-    if (window === window.top)
-      main(libs.$);
+      reDownloadList = function () {
+        console.log('redownload list!');
+        return ba4b.downloadNewList();
+      };
+      if ('undefined' !== typeof cloneInto && null != cloneInto && ('undefined' !== typeof exportFunction && null != exportFunction)) {
+        try {
+          unsafeWindow.ba4b = cloneInto({}, unsafeWindow);
+          exportFunction(triggerAjax, unsafeWindow.ba4b, { defineAs: 'updateImageIn' });
+          exportFunction(resetConfig, unsafeWindow.ba4b, { defineAs: 'resetConfig' });
+          exportFunction(reDownloadList, unsafeWindow.ba4b, { defineAs: 'reDownload' });
+        } catch (e$) {
+          ;
+        }
+      } else {
+        unsafeWindow.ba4b = { updateImageIn: triggerAjax };
+      }
+      GM_registerMenuCommand('ba4b : update list now', reDownloadList);
+      GM_registerMenuCommand('ba4b : reset config', resetConfig);
+    }
   });
   require.define('/view/ajax_hook.coffee', function (module, exports, __dirname, __filename) {
-    var AjaxHook, EventEmitter;
+    var AjaxHook, EventEmitter, hook_checkMsg, hook_checkReply, hook_getVoteList, hook_readAllReply, hook_readMore;
     EventEmitter = require('events', module).EventEmitter;
+    hook_readAllReply = "\r\nfunction readAllReply(a, b) {\r\n  $.ajax({\r\n    url: '/ajax/comment.php?a=S&s=' + a,\r\n    method: 'POST',\r\n    param: 'a=S&s=' + a,\r\n    loading: function () {\r\n      b.innerHTML = '<img src=\"http://i2.bahamut.com.tw/loading.gif\">'\r\n    },\r\n    success: function (b) {\r\n      changeDiv('allReply' + a, b)\r\n      try {\r\n        window.ba4b.updateImageIn()\r\n      } catch (e) {\r\n        console.log(e);\r\n      }\r\n    }\r\n  })\r\n}";
+    hook_readMore = "\r\nfunction readMore(a) {\r\n  if (point_now < total_ary) {\r\n    a = point_now;\r\n    var b = buildMsgAndReply3();\r\n    document.getElementById('noMsg') .style.display = 'none';\r\n    document.getElementById('readMore') .innerHTML += b;\r\n    for (i = a; i < point_now && i < total_ary; i++) changetxt('m-' + msgArr[i].sn)\r\n    \r\n    try {\r\n      window.ba4b.updateImageIn()\r\n    } catch (e) {\r\n      console.log(e);\r\n    }\r\n    \r\n  } else {\r\n    document.getElementById('moreBtn') .disabled = !0;\r\n    var b = getCookie('BAHAID'),\r\n    c = '',\r\n    d = '';\r\n    t = document.getElementById('lastTime') .value;\r\n    1 < (new Date - new Date(t.substr(0, 4), t.substr(5, 2) - 1, t.substr(8, 2), t.substr(11, 2), t.substr(14, 2), t.substr(17, 2))) / 7776000000 ? (alert('\u60A8\u6C92\u6709\u66F4\u820A\u7684\u52D5\u614B\u4E86\uFF01'), document.getElementById('moreBtn') .disabled = !1)  : (r = document.getElementById('daysRange') .value, a.toLowerCase() == b.toLowerCase() ? (c = '/ajax/getMoreMsg.php', d = 't=' + t + '&r=' + r + '&k=' + k + '&auto=' + document.getElementById('autoReadMore') .value + '&lastGetSn=' + document.getElementById('lastGetSn') .value)  : (c = '/ajax/othersMoreMsg.php', d = 't=' + t + '&r=' + r + '&u=' + a + '&k=' + k + '&lastGetSn=' + document.getElementById('lastGetSn') .value), $.ajax({\r\n      url: c,\r\n      method: 'POST',\r\n      param: d,\r\n      success: function (a) {\r\n        showActiveDiv('readMore', a)\r\n        \r\n        try {\r\n          window.ba4b.updateImageIn()\r\n        } catch (e) {\r\n          console.log(e);\r\n        }\r\n      }\r\n    }))\r\n  }\r\n}";
+    hook_getVoteList = "\r\nfunction getVoteList(a, b, c) {\r\n  var d = document.getElementById('msgvotelist'),\r\n  f = document.getElementById('lastSn');\r\n  if ('none' == d.style.display || 'block' == d.style.display && b + '&' + c != f.value) {\r\n    'block' == d.style.display && (d.style.display = 'none');\r\n    $.ajax({\r\n      url: '/ajax/comment.php?a=showGPBP&t=' + c + '&sn=' + b,\r\n      method: 'POST',\r\n      param: 'a=showGPBP&t=' + c + '&sn=' + b,\r\n      success: function (a) {\r\n        showVoteList('msgvotelist', a)\r\n        try {\r\n          window.ba4b.updateImageIn()\r\n        } catch (e) {\r\n          console.log(e);\r\n        }\r\n      }\r\n    });\r\n    if (isIE()) {\r\n      var h = a.x;\r\n      a = document.documentElement.scrollTop + a.clientY\r\n    } else h = 1000 < document.body.clientWidth ? a.pageX - (document.body.clientWidth - 1000) / 2 : a.pageX,\r\n    a = a.pageY;\r\n    f.value = b + '&' + c;\r\n    d.style.left = h + 'px';\r\n    d.style.top = a + 10 + 'px'\r\n  } else d.style.display = 'none',\r\n  f.value = ''\r\n}";
+    hook_checkMsg = "\r\nfunction checkMsg() {\r\n  var a = document.getElementById('msgtalk'),\r\n  b = a.value;\r\n  if (1800 < b.utf8Length()) alert('\u53EA\u80FD\u5BEB600\u500B\u5B57\u5594!');\r\n   else if ('' == b.replace(/(^s*)|(s*$)/g, '')) alert('\u4E0D\u80FD\u7A7A\u767D!');\r\n   else if (1 == document.getElementById('sendingMsg') .value) alert('\u8655\u7406\u4E2D\u8ACB\u7A0D\u5019\uFF01');\r\n   else {\r\n    var b = 'mainmsg.php',\r\n    c = '',\r\n    d = document.getElementById('ori_s');\r\n    if (d) switch (d.value.substr(0, 1)) {\r\n    case 'g':\r\n      b = 'guildMsgNew.php',\r\n      c = '&sf=' + d.value.substr(1)\r\n    }\r\n    document.getElementById('sendingMsg') .value = 1;\r\n    noreply = 0;\r\n    document.getElementById('forbidden') && (noreply = document.getElementById('forbidden') .checked ? 1 : 0);\r\n    secret = document.getElementById('privacy') .checked ? 1 : 0;\r\n    $('iframe') .each(function (a) {\r\n      0 <= a.src.indexOf('?autoplay=1') && (a.src = a.src.replace(/?autoplay=1/gi, ''))\r\n    });\r\n    $.ajax({\r\n      url: '/ajax/' + b,\r\n      method: 'POST',\r\n      param: 'msg=' + encodeURIComponent(a.value) + '&status=' + secret + '&flag=' + noreply + c,\r\n      success: function (a) {\r\n        showActiveDiv('MSG-box2', a)\r\n        try {\r\n          window.ba4b.updateImageIn()\r\n        } catch (e) {\r\n          console.log(e);\r\n        }\r\n      }\r\n    })\r\n  }\r\n}";
+    hook_checkReply = "\r\nfunction checkReply(a, b) {\r\n  var c = document.getElementById('replyMsg' + a),\r\n  d = c.value;\r\n  countLimit(c, 85) || ('' == d.replace(/(^s*)|(s*$)/g, '') ? (alert('\u8ACB\u8F38\u5165\u7559\u8A00'), c.focus())  : document.getElementById('replyBtn' + a) .disabled ? alert('\u8655\u7406\u4E2D\uFF0C\u8ACB\u7A0D\u5019')  : (document.getElementById('replyBtn' + a) .disabled = !0, $.ajax({\r\n    url: '/ajax/comment.php?a=A&s=' + a,\r\n    method: 'POST',\r\n    param: 'a=A&s=' + a + '&c=' + encodeURIComponent(c.value) + '&u=' + b,\r\n    success: function (b) {\r\n    showActiveDiv('allReply' + a, b)\r\n    try {\r\n      window.ba4b.updateImageIn()\r\n    } catch (e) {\r\n      console.log(e);\r\n    }\r\n    }\r\n  })))\r\n}";
     AjaxHook = function (super$) {
       extends$(AjaxHook, super$);
       function AjaxHook(param$, param$1) {
@@ -129,102 +169,17 @@
           return this._injectGuildHook();
       };
       AjaxHook.prototype._injectGuildHook = function () {
-        var $, killOldHook, newHook, newHook_readMore, unsafe;
-        console.log('inject hook!');
-        unsafe = this.unsafeWindow;
-        $ = this.$;
-        newHook = function (this$) {
-          return function (replyId, loadBar) {
-            var all;
-            all = loadBar.parentNode;
-            return $.ajax({
-              url: '/ajax/comment.php?a=S&s=' + replyId,
-              method: 'POST',
-              data: 'a=S&s=' + replyId,
-              loading: function () {
-                return loadBar.innerHTML = '<img src="http://i2.bahamut.com.tw/loading.gif">';
-              },
-              success: function (this$1) {
-                return function (result) {
-                  console.log('hook test');
-                  console.log(result);
-                  unsafe.changeDiv('allReply' + replyId, result);
-                  this$1.emit('ajax', all);
-                  return console.log(all);
-                };
-              }(this$)
-            });
-          };
-        }(this);
-        newHook_readMore = function (this$) {
-          return function (a) {
-            var a$, b, c, d, i, t;
-            a$ = a;
-            i = void 0;
-            b = void 0;
-            c = void 0;
-            d = void 0;
-            t = void 0;
-            if (unsafe.point_now < unsafe.total_ary) {
-              a = unsafe.point_now;
-              b = unsafe.buildMsgAndReply3();
-              document.getElementById('noMsg').style.display = 'none';
-              document.getElementById('readMore').innerHTML += b;
-              i = a;
-              while (i < unsafe.point_now && i < unsafe.total_ary) {
-                unsafe.changetxt('m-' + unsafe.msgArr[i].sn);
-                i++;
-              }
-              this$.emit('ajax');
-            } else {
-              document.getElementById('moreBtn').disabled = !0;
-              b = unsafe.getCookie('BAHAID');
-              c = '';
-              d = '';
-              t = document.getElementById('lastTime').value;
-              if (1 < (new Date - new Date(t.substr(0, 4), t.substr(5, 2) - 1, t.substr(8, 2), t.substr(11, 2), t.substr(14, 2), t.substr(17, 2))) / 7776e6) {
-                alert('\u60A8\u6C92\u6709\u66F4\u820A\u7684\u52D5\u614B\u4E86\uFF01');
-                document.getElementById('moreBtn').disabled = false;
-              } else {
-                unsafe.r = document.getElementById('daysRange').value;
-                if (a.toLowerCase() === b.toLowerCase()) {
-                  c = '/ajax/getMoreMsg.php';
-                  d = 't=' + t + '&r=' + unsafe.r + '&k=' + unsafe.k + '&auto=' + document.getElementById('autoReadMore').value + '&lastGetSn=' + document.getElementById('lastGetSn').value;
-                } else {
-                  c = '/ajax/othersMoreMsg.php';
-                  d = 't=' + t + '&r=' + unsafe.r + '&u=' + a + '&k=' + unsafe.k + '&lastGetSn=' + document.getElementById('lastGetSn').value;
-                }
-                $.ajax({
-                  url: c,
-                  method: 'POST',
-                  data: d,
-                  success: function (this$1) {
-                    return function (a) {
-                      console.log(unsafe.showActiveDiv.call(unsafe, 'readMore', a));
-                      newHook_readMore(a$);
-                      console.log(a);
-                      this$1.emit('ajax');
-                    };
-                  }(this$)
-                });
-              }
-            }
-          };
-        }(this);
-        killOldHook = 'javascript:' + encodeURIComponent('readAllReply = function(){};readMore = function(){};undefined;');
-        window.location.href = killOldHook;
-        this.$(document).on('click', 'a[onclick^=readAllReply]', null, function () {
-          var id, onclickPattern;
-          onclickPattern = /readAllReply\((\d+),this\.parentNode\)/g;
-          id = onclickPattern.exec($(this).attr('onclick'))[1];
-          return newHook(id, this.wrappedJSObject.parentNode);
-        });
-        return this.$(document).on('click', 'button[onclick^=readMore]', null, function () {
-          var id, onclickPattern;
-          onclickPattern = /readMore\('(#GID\d+)'\);/g;
-          id = onclickPattern.exec($(this).attr('onclick'))[1];
-          return newHook_readMore(id);
-        });
+        var hookText;
+        hookText = 'javascript:' + encodeURIComponent(hook_readAllReply) + ';undefined;';
+        window.location.href = hookText;
+        hookText = 'javascript:' + encodeURIComponent(hook_readMore) + ';undefined;';
+        window.location.href = hookText;
+        hookText = 'javascript:' + encodeURIComponent(hook_getVoteList) + ';undefined;';
+        window.location.href = hookText;
+        hookText = 'javascript:' + encodeURIComponent(hook_checkMsg) + ';undefined;';
+        window.location.href = hookText;
+        hookText = 'javascript:' + encodeURIComponent(hook_checkReply) + ';undefined;';
+        return window.location.href = hookText;
       };
       return AjaxHook;
     }(EventEmitter);
