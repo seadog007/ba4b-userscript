@@ -95,7 +95,7 @@ hook_checkMsg = """
     var a = document.getElementById('msgtalk'),
     b = a.value;
     if (1800 < b.utf8Length()) alert('只能寫600個字喔!');
-     else if ('' == b.replace(/(^\s*)|(\s*$)/g, '')) alert('不能空白!');
+     else if ('' == b.replace(/(^\\s*)|(\\s*$)/g, '')) alert('不能空白!');
      else if (1 == document.getElementById('sendingMsg') .value) alert('處理中請稍候！');
      else {
       var b = 'mainmsg.php',
@@ -111,7 +111,7 @@ hook_checkMsg = """
       document.getElementById('forbidden') && (noreply = document.getElementById('forbidden') .checked ? 1 : 0);
       secret = document.getElementById('privacy') .checked ? 1 : 0;
       $('iframe') .each(function (a) {
-        0 <= a.src.indexOf('?autoplay=1') && (a.src = a.src.replace(/\?autoplay=1/gi, ''))
+        0 <= a.src.indexOf('?autoplay=1') && (a.src = a.src.replace(/\\?autoplay=1/gi, ''))
       });
       $.ajax({
         url: '/ajax/' + b,
@@ -163,14 +163,20 @@ class AjaxHook extends EventEmitter
       @_injectGuildHook()
       
   _injectGuildHook: ()->
-    hookText = "javascript:#{encodeURIComponent hook_readAllReply};undefined;"
-    window.location.href = hookText
-    hookText = "javascript:#{encodeURIComponent hook_readMore};undefined;"
-    window.location.href = hookText
-    hookText = "javascript:#{encodeURIComponent hook_getVoteList};undefined;"
-    window.location.href = hookText
-    hookText = "javascript:#{encodeURIComponent hook_checkMsg};undefined;"
-    window.location.href = hookText
-    hookText = "javascript:#{encodeURIComponent hook_checkReply};undefined;"
-    window.location.href = hookText
+    @_injectScript hook_readAllReply
+    @_injectScript hook_readMore
+    @_injectScript hook_getVoteList
+    @_injectScript hook_checkMsg
+    @_injectScript hook_checkReply
+  
+  _injectScript: (scriptStr)->
+    ###
+    scriptUrl = "javascript:#{encodeURIComponent scriptStr};console.log('script injected!');void(0);"
+    window.location.assign(scriptUrl)
+    ###
+    try
+      unsafeWindow.eval scriptStr
+    catch e
+      console.log 'eval error', e, scriptStr
+  
 module.exports = AjaxHook
