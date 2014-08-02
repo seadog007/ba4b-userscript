@@ -8,8 +8,8 @@ class ImageReplacer
     else
       images = @$ "img"
     result = false
-    format = /http:\/\/avatar2.bahamut.com.tw\/avataruserpic\/\w\/\w\/(\w+)\/.*/g
     images = images.filter ()->
+      format = /http:\/\/avatar2\.bahamut\.com\.tw\/avataruserpic\/\w\/\w\/(\w+)\/.*/g
       str = this.src
       return format.test str
     images.each ->
