@@ -1,5 +1,6 @@
 {EventEmitter} = require 'events'
 
+#hook for guild
 
 hook_readAllReply = """
   function readAllReply(a, b) {
@@ -149,6 +150,68 @@ hook_checkReply = """
   }
 """
 
+# hook for home
+
+hook_r_creation_gplist = """
+  function r_creation_gplist( xmldoc ) {
+    var nodes = xmldoc.getElementsByTagName('errMsg');
+    var htmlcode = '';
+
+    if(nodes.length) {
+      htmlcode = nodes[0].firstChild.nodeValue;
+    }
+    else{
+      var userid = xmldoc.getElementsByTagName('userid');
+      var next = xmldoc.getElementsByTagName('next');
+      for(i=0;i<userid.length;i++){
+        var uid = userid[i].firstChild.nodeValue;
+        htmlcode += '<a href=\"http://home.gamer.com.tw/'+uid+'\" target=\"_blank\"><img src=\"'+getAvatarPic(uid)+'\" onmouseover=\"showGamerCard(event,\\''+uid.toLowerCase()+'\\')\" onmousemove=\"moveGamerCard(event)\" onmouseout=\"hideGamerCard()\"></a>'
+      }
+      if( next.length ) {
+        htmlcode += next[0].firstChild.nodeValue;
+      }
+    }
+    $('#gplist').html(htmlcode);
+    $('#gplist').show();
+    try {
+      window.ba4b.updateImageIn()
+    } catch (e) {
+      console.log(e);
+    }
+    
+  }
+"""
+hook_r_creation_reply = """
+  function r_creation_reply(xmldoc) {
+    var error = $('MSG', xmldoc).val();
+    if( error ) {
+      alert(error);
+      return ;
+    }
+
+    var html = $('TXT',xmldoc).val();
+    var rsn = $('RSN',xmldoc).val();
+
+    $('#reply'+rsn).val('');
+
+
+    if( 0 != rsn ) {
+      $('#ownerreplys'+rsn).html($('#ownerreplys'+rsn).html()+html);
+    }else{
+      $('#replys').html($('#replys').html()+html);
+    }
+
+    creation_changetxt('replys');
+
+    egg('button[disabled]').attr('disabled',false);
+    try {
+      window.ba4b.updateImageIn()
+    } catch (e) {
+      console.log(e);
+    }
+  }
+"""
+
 class AjaxHook extends EventEmitter
   constructor: (@unsafeWindow, @$)->
   
@@ -159,9 +222,21 @@ class AjaxHook extends EventEmitter
   ###
   injectHook: ()->
     guildPattern = /http:\/\/guild\.gamer\.com\.tw\/guild\.php\?sn=.+/g
+    guildSingleMessagePattern = /http:\/\/guild\.gamer\.com\.tw\/singleACMsg\.php\?.+/g
+    homePattern = /http:\/\/home\.gamer\.com\.tw\/.+/g
+    
     if (guildPattern.test(window.location.href))
       @_injectGuildHook()
-      
+    else if (guildSingleMessagePattern.test(window.location.href))
+      @_injectGuildHook()
+    
+    if (homePattern.test(window.location.href))
+      @_injectHomeHook()
+  
+  _injectHomeHook: ()->
+    @_injectScript hook_r_creation_gplist
+    @_injectScript hook_r_creation_reply
+  
   _injectGuildHook: ()->
     @_injectScript hook_readAllReply
     @_injectScript hook_readMore
