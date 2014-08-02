@@ -176,9 +176,15 @@
         return this._injectScript(hook_checkReply);
       };
       AjaxHook.prototype._injectScript = function (scriptStr) {
-        var e;
+        var _window, e;
+        if ('undefined' !== typeof unsafeWindow && null != unsafeWindow) {
+          _window = unsafeWindow;
+        } else {
+          _window = window;
+        }
         try {
-          return unsafeWindow['eval'](scriptStr);
+          _window['eval'](scriptStr);
+          return console.log('script injected!');
         } catch (e$) {
           e = e$;
           return console.log('eval error', e, scriptStr);

@@ -170,12 +170,13 @@ class AjaxHook extends EventEmitter
     @_injectScript hook_checkReply
   
   _injectScript: (scriptStr)->
-    ###
-    scriptUrl = "javascript:#{encodeURIComponent scriptStr};console.log('script injected!');void(0);"
-    window.location.assign(scriptUrl)
-    ###
+    if unsafeWindow?
+      _window = unsafeWindow
+    else
+      _window = window
     try
-      unsafeWindow.eval scriptStr
+      _window.eval scriptStr
+      console.log "script injected!"
     catch e
       console.log 'eval error', e, scriptStr
   
