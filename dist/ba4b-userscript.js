@@ -144,6 +144,8 @@
       } else {
         unsafeWindow.ba4b = { updateImageIn: triggerAjax };
       }
+      GM_registerMenuCommand('ba4b : update list now', reDownloadList);
+      GM_registerMenuCommand('ba4b : reset config', resetConfig);
     }
   });
   require.define('/view/ajax_hook.coffee', function (module, exports, __dirname, __filename) {

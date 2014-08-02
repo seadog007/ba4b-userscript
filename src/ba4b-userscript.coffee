@@ -148,3 +148,7 @@ if window is window.top
   else
     unsafeWindow.ba4b = 
       updateImageIn : triggerAjax
+  
+  GM_registerMenuCommand "ba4b : update list now", reDownloadList
+  GM_registerMenuCommand "ba4b : reset config", resetConfig
+  
