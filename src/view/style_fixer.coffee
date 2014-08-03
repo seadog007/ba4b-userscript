@@ -10,6 +10,11 @@ fixCss = """
       margin: 10px 0px 0px 10px;
       border: 2px solid transparent;
   }
+  .MSG-box9 .MSG-myavatar {
+      float: left;
+      margin: 10px 0px 0px 10px;
+      border: 2px solid transparent;
+  }
 """
 
 class StyleFixer
