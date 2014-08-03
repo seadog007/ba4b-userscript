@@ -51,7 +51,7 @@
       };
     }();
   require.define('/ba4b-userscript.coffee', function (module, exports, __dirname, __filename) {
-    var $, AjaxHook, ba4b, Ba4b, defaultConfig, downloader, Downloader, getConfig, hook, ImageChanger, imageChanger, redownloadList, resetAll, resetConfig, setConfig, storage, Storage, triggerAjax, urlCreater, UrlCreater;
+    var $, AjaxHook, ba4b, Ba4b, defaultConfig, Downloader, downloader, getConfig, hook, ImageChanger, imageChanger, redownloadList, resetAll, resetConfig, setConfig, Storage, storage, StyleFixer, styleFixer, triggerAjax, UrlCreater, urlCreater;
     $ = require('/lib/jquery-1.11_1.js', module).noConflict();
     Downloader = require('/util/downloader.coffee', module);
     defaultConfig = require('/config.js', module);
@@ -59,8 +59,9 @@
     Storage = require('/util/storage.coffee', module);
     AjaxHook = require('/view/ajax_hook.coffee', module);
     UrlCreater = require('/util/urlcreater.coffee', module);
+    StyleFixer = require('/view/style_fixer.coffee', module);
     Ba4b = function () {
-      function Ba4b(param$, param$1, param$2, param$3, param$4, param$5, param$6) {
+      function Ba4b(param$, param$1, param$2, param$3, param$4, param$5, param$6, param$7) {
         this.downloader = param$;
         this.defaultConfig = param$1;
         this.imageChanger = param$2;
@@ -68,6 +69,7 @@
         this.ajaxHook = param$4;
         this.GM_registerMenuCommand = param$5;
         this.urlCreater = param$6;
+        this.styleFixer = param$7;
         this.config = null;
         this.loadConfig();
         this._init();
@@ -80,6 +82,7 @@
           console.log('out date map: ' + this.storage.get('expire') + ' \n now is ' + Date.now());
           this.downloadNewList();
         }
+        this.styleFixer.fix();
         setTimeoutR = function (a, b) {
           return setTimeout(b, a);
         };
@@ -138,7 +141,8 @@
       imageChanger = new ImageChanger($);
       hook = new AjaxHook(window, $);
       urlCreater = new UrlCreater;
-      ba4b = new Ba4b(downloader, defaultConfig, imageChanger, storage, hook, GM_registerMenuCommand, urlCreater);
+      styleFixer = new StyleFixer($);
+      ba4b = new Ba4b(downloader, defaultConfig, imageChanger, storage, hook, GM_registerMenuCommand, urlCreater, styleFixer);
       triggerAjax = function (container) {
         console.log('update ajax call!');
         return ba4b.changeImage(container);
@@ -185,6 +189,23 @@
       GM_registerMenuCommand('ba4b : update list now', redownloadList);
       GM_registerMenuCommand('ba4b : reset config', resetAll);
     }
+  });
+  require.define('/view/style_fixer.coffee', function (module, exports, __dirname, __filename) {
+    var fixCss, StyleFixer;
+    fixCss = '\r\n.FM-cbox2 > a {\r\n    float: left;\r\n    border-right: 1px solid transparent;\r\n    border-bottom: 1px solid transparent;\r\n    margin-right: 10px;\r\n}\r\n.MSG-myavatar {\r\n    float: left;\r\n    margin: 10px 0px 0px 10px;\r\n    border: 2px solid transparent;\r\n}';
+    StyleFixer = function () {
+      function StyleFixer(param$) {
+        this.$ = param$;
+      }
+      StyleFixer.prototype.fix = function () {
+        var styleElement;
+        styleElement = this.$('<style></style>');
+        styleElement.html(fixCss);
+        return styleElement.appendTo('body');
+      };
+      return StyleFixer;
+    }();
+    module.exports = StyleFixer;
   });
   require.define('/util/urlcreater.coffee', function (module, exports, __dirname, __filename) {
     var canvasHelper, Deferer, EventEmitter, ImageCreater, unsafe, UrlCreater;
