@@ -3,7 +3,7 @@
 // @namespace      ba4b
 // @description    Better Avatar for Bahamut | 給巴哈姆特一個好看一點的頭像
 // @include        *.gamer.com.tw/*
-// @version        1.0.0
+// @version        1.1.0
 // @grant          GM_getValue
 // @grant          GM_setValue
 // @grant          GM_xmlhttpRequest
