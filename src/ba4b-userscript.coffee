@@ -88,9 +88,14 @@ class Ba4b
   _init: ->
     if (@storage.get "map")? and !@isListExpired()
       @changeImage storage.get "map"
-    else
-      console.log "out date map: #{@storage.get 'expire'} \n now is #{Date.now()}"
+    else if (@storage.get "map")?
+      console.log "out dateed map: #{@storage.get 'expire'} \n now is #{Date.now()} \n Use old map for now."
+      @changeImage storage.get "map"
       @downloadNewList()
+    else
+      console.log "map cache unexist, download from server now!"
+      @downloadNewList()
+    
     @styleFixer.fix()
     setTimeoutR = (a, b)-> setTimeout b, a
     setTimeoutR 1000, ()=>
@@ -138,7 +143,7 @@ if window is window.top
   storage = new Storage GM_getValue, GM_setValue
   downloader = new Downloader
   imageChanger = new ImageChanger $
-  hook = new AjaxHook window, $
+  hook = new AjaxHook
   urlCreater = new UrlCreater
   styleFixer = new StyleFixer $
   

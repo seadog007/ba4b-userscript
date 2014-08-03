@@ -90,8 +90,12 @@
         var setTimeoutR;
         if (null != this.storage.get('map') && !this.isListExpired()) {
           this.changeImage(storage.get('map'));
+        } else if (null != this.storage.get('map')) {
+          console.log('out dateed map: ' + this.storage.get('expire') + ' \n now is ' + Date.now() + ' \n Use old map for now.');
+          this.changeImage(storage.get('map'));
+          this.downloadNewList();
         } else {
-          console.log('out date map: ' + this.storage.get('expire') + ' \n now is ' + Date.now());
+          console.log('map cache unexist, download from server now!');
           this.downloadNewList();
         }
         this.styleFixer.fix();
@@ -151,7 +155,7 @@
       storage = new Storage(GM_getValue, GM_setValue);
       downloader = new Downloader;
       imageChanger = new ImageChanger($);
-      hook = new AjaxHook(window, $);
+      hook = new AjaxHook;
       urlCreater = new UrlCreater;
       styleFixer = new StyleFixer($);
       ba4b = new Ba4b(downloader, defaultConfig, imageChanger, storage, hook, GM_registerMenuCommand, urlCreater, styleFixer);
@@ -619,9 +623,7 @@
     hook_r_creation_reply = "\r\n  function r_creation_reply(xmldoc) {\r\n    var error = $('MSG', xmldoc).val();\r\n    if( error ) {\r\n      alert(error);\r\n      return ;\r\n    }\r\n\n    var html = $('TXT',xmldoc).val();\r\n    var rsn = $('RSN',xmldoc).val();\r\n\n    $('#reply'+rsn).val('');\r\n\n\n    if( 0 != rsn ) {\r\n      $('#ownerreplys'+rsn).html($('#ownerreplys'+rsn).html()+html);\r\n    }else{\r\n      $('#replys').html($('#replys').html()+html);\r\n    }\r\n\n    creation_changetxt('replys');\r\n\n    egg('button[disabled]').attr('disabled',false);\r\n    try {\r\n      window.ba4b.updateImageIn()\r\n    } catch (e) {\r\n      console.log(e);\r\n    }\r\n  }";
     AjaxHook = function (super$) {
       extends$(AjaxHook, super$);
-      function AjaxHook(param$, param$1) {
-        this.unsafeWindow = param$;
-        this.$ = param$1;
+      function AjaxHook() {
       }
       AjaxHook.prototype.injectHook = function () {
         var guildPattern, guildSingleMessagePattern, homePattern;
