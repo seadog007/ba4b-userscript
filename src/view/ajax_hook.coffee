@@ -213,7 +213,7 @@ hook_r_creation_reply = """
 """
 
 class AjaxHook extends EventEmitter
-  constructor: (@unsafeWindow, @$)->
+  constructor: ()->
   
   ###
     TODO
