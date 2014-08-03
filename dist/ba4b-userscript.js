@@ -196,7 +196,7 @@
   });
   require.define('/view/style_fixer.coffee', function (module, exports, __dirname, __filename) {
     var fixCss, StyleFixer;
-    fixCss = '\r\n.FM-cbox2 > a {\r\n    float: left;\r\n    border-right: 1px solid transparent;\r\n    border-bottom: 1px solid transparent;\r\n    margin-right: 10px;\r\n}\r\n.MSG-myavatar {\r\n    float: left;\r\n    margin: 10px 0px 0px 10px;\r\n    border: 2px solid transparent;\r\n}';
+    fixCss = '\r\n.FM-cbox2 > a {\r\n    float: left;\r\n    border-right: 1px solid transparent;\r\n    border-bottom: 1px solid transparent;\r\n    margin-right: 10px;\r\n}\r\n.MSG-myavatar {\r\n    float: left;\r\n    margin: 10px 0px 0px 10px;\r\n    border: 2px solid transparent;\r\n}\r\n.MSG-box9 .MSG-myavatar {\r\n    float: left;\r\n    margin: 10px 0px 0px 10px;\r\n    border: 2px solid transparent;\r\n}';
     StyleFixer = function () {
       function StyleFixer(param$) {
         this.$ = param$;
