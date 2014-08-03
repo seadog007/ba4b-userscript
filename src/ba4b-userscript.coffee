@@ -6,7 +6,7 @@ Storage = require "util/storage.coffee"
 AjaxHook = require "view/ajax_hook.coffee"
 
 UrlCreater = require "util/urlcreater.coffee"
-
+StyleFixer = require "view/style_fixer.coffee"
 ###
 list format
 {
@@ -80,7 +80,7 @@ main = ($)->
   return true
   ###
 class Ba4b
-  constructor: (@downloader, @defaultConfig, @imageChanger, @storage, @ajaxHook, @GM_registerMenuCommand, @urlCreater)->
+  constructor: (@downloader, @defaultConfig, @imageChanger, @storage, @ajaxHook, @GM_registerMenuCommand, @urlCreater, @styleFixer)->
     @config = null
     @loadConfig()
     @_init()
@@ -91,9 +91,11 @@ class Ba4b
     else
       console.log "out date map: #{@storage.get 'expire'} \n now is #{Date.now()}"
       @downloadNewList()
+    @styleFixer.fix()
     setTimeoutR = (a, b)-> setTimeout b, a
     setTimeoutR 1000, ()=>
       @ajaxHook.injectHook()
+    
   isListExpired: ->
     return (@storage.get 'expire') < Date.now()
   
@@ -138,8 +140,9 @@ if window is window.top
   imageChanger = new ImageChanger $
   hook = new AjaxHook window, $
   urlCreater = new UrlCreater
+  styleFixer = new StyleFixer $
   
-  ba4b = new Ba4b downloader, defaultConfig, imageChanger, storage, hook, GM_registerMenuCommand, urlCreater
+  ba4b = new Ba4b downloader, defaultConfig, imageChanger, storage, hook, GM_registerMenuCommand, urlCreater, styleFixer
   
   triggerAjax = (container)->
     console.log "update ajax call!"
