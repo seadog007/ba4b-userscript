@@ -198,8 +198,8 @@
           resetAll: resetAll
         };
       }
-      GM_registerMenuCommand('ba4b : update list now', redownloadList);
-      GM_registerMenuCommand('ba4b : reset config', resetAll);
+      GM_registerMenuCommand('ba4b : \u7ACB\u523B\u66F4\u65B0\u982D\u50CF\u5217\u8868', redownloadList);
+      GM_registerMenuCommand('ba4b : \u91CD\u8A2D\u6240\u6709\u8A2D\u5B9A', resetAll);
     }
   });
   require.define('/view/style_fixer.coffee', function (module, exports, __dirname, __filename) {

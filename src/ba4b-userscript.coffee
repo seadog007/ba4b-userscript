@@ -185,6 +185,6 @@ if window is window.top
       getConfig : getConfig
       resetAll : resetAll
   
-  GM_registerMenuCommand "ba4b : update list now", redownloadList
-  GM_registerMenuCommand "ba4b : reset config", resetAll
+  GM_registerMenuCommand "ba4b : 立刻更新頭像列表", redownloadList
+  GM_registerMenuCommand "ba4b : 重設所有設定", resetAll
   
