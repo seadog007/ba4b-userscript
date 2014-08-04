@@ -55,10 +55,10 @@
     $ = require('/lib/jquery-1.11_1.js', module).noConflict();
     Downloader = require('/util/downloader.coffee', module);
     defaultConfig = require('/config.js', module);
-    ImageChanger = require('/view/image_replacer.coffee', module);
     Storage = require('/util/storage.coffee', module);
-    AjaxHook = require('/view/ajax_hook.coffee', module);
     UrlCreater = require('/util/urlcreater.coffee', module);
+    ImageChanger = require('/view/image_replacer.coffee', module);
+    AjaxHook = require('/view/ajax_hook.coffee', module);
     StyleFixer = require('/view/style_fixer.coffee', module);
     Ba4b = function () {
       function Ba4b(param$, param$1, param$2, param$3, param$4, param$5, param$6, param$7) {
@@ -135,7 +135,7 @@
       Ba4b.prototype.changeImage = function (map, conatiner) {
         if (!(null != map))
           map = storage.get('map');
-        return imageChanger.change(map);
+        return imageChanger.change(map, conatiner);
       };
       return Ba4b;
     }();
@@ -211,135 +211,62 @@
     }();
     module.exports = StyleFixer;
   });
-  require.define('/util/urlcreater.coffee', function (module, exports, __dirname, __filename) {
-    var canvasHelper, Deferer, EventEmitter, ImageCreater, unsafe, UrlCreater;
-    unsafe = unsafeWindow;
-    canvasHelper = require('/util/canvashelper.coffee', module);
+  require.define('/view/ajax_hook.coffee', function (module, exports, __dirname, __filename) {
+    var AjaxHook, EventEmitter, hook_checkMsg, hook_checkReply, hook_getVoteList, hook_r_creation_gplist, hook_r_creation_reply, hook_readAllReply, hook_readMore;
     EventEmitter = require('events', module).EventEmitter;
-    Deferer = function (super$) {
-      extends$(Deferer, super$);
-      function Deferer() {
-        this.all = 0;
-        this.counted = 0;
+    hook_readAllReply = "\r\nfunction readAllReply(a, b) {\r\n  $.ajax({\r\n    url: '/ajax/comment.php?a=S&s=' + a,\r\n    method: 'POST',\r\n    param: 'a=S&s=' + a,\r\n    loading: function () {\r\n      b.innerHTML = '<img src=\"http://i2.bahamut.com.tw/loading.gif\">'\r\n    },\r\n    success: function (b) {\r\n      changeDiv('allReply' + a, b)\r\n      try {\r\n        window.ba4b.updateImageIn()\r\n      } catch (e) {\r\n        console.log(e);\r\n      }\r\n    }\r\n  })\r\n}";
+    hook_readMore = "\r\nfunction readMore(a) {\r\n  if (point_now < total_ary) {\r\n    a = point_now;\r\n    var b = buildMsgAndReply3();\r\n    document.getElementById('noMsg') .style.display = 'none';\r\n    document.getElementById('readMore') .innerHTML += b;\r\n    for (i = a; i < point_now && i < total_ary; i++) changetxt('m-' + msgArr[i].sn)\r\n    \r\n    try {\r\n      window.ba4b.updateImageIn()\r\n    } catch (e) {\r\n      console.log(e);\r\n    }\r\n    \r\n  } else {\r\n    document.getElementById('moreBtn') .disabled = !0;\r\n    var b = getCookie('BAHAID'),\r\n    c = '',\r\n    d = '';\r\n    t = document.getElementById('lastTime') .value;\r\n    1 < (new Date - new Date(t.substr(0, 4), t.substr(5, 2) - 1, t.substr(8, 2), t.substr(11, 2), t.substr(14, 2), t.substr(17, 2))) / 7776000000 ? (alert('\u60A8\u6C92\u6709\u66F4\u820A\u7684\u52D5\u614B\u4E86\uFF01'), document.getElementById('moreBtn') .disabled = !1)  : (r = document.getElementById('daysRange') .value, a.toLowerCase() == b.toLowerCase() ? (c = '/ajax/getMoreMsg.php', d = 't=' + t + '&r=' + r + '&k=' + k + '&auto=' + document.getElementById('autoReadMore') .value + '&lastGetSn=' + document.getElementById('lastGetSn') .value)  : (c = '/ajax/othersMoreMsg.php', d = 't=' + t + '&r=' + r + '&u=' + a + '&k=' + k + '&lastGetSn=' + document.getElementById('lastGetSn') .value), $.ajax({\r\n      url: c,\r\n      method: 'POST',\r\n      param: d,\r\n      success: function (a) {\r\n        showActiveDiv('readMore', a)\r\n        \r\n        try {\r\n          window.ba4b.updateImageIn()\r\n        } catch (e) {\r\n          console.log(e);\r\n        }\r\n      }\r\n    }))\r\n  }\r\n}";
+    hook_getVoteList = "\r\nfunction getVoteList(a, b, c) {\r\n  var d = document.getElementById('msgvotelist'),\r\n  f = document.getElementById('lastSn');\r\n  if ('none' == d.style.display || 'block' == d.style.display && b + '&' + c != f.value) {\r\n    'block' == d.style.display && (d.style.display = 'none');\r\n    $.ajax({\r\n      url: '/ajax/comment.php?a=showGPBP&t=' + c + '&sn=' + b,\r\n      method: 'POST',\r\n      param: 'a=showGPBP&t=' + c + '&sn=' + b,\r\n      success: function (a) {\r\n        showVoteList('msgvotelist', a)\r\n        try {\r\n          window.ba4b.updateImageIn()\r\n        } catch (e) {\r\n          console.log(e);\r\n        }\r\n      }\r\n    });\r\n    if (isIE()) {\r\n      var h = a.x;\r\n      a = document.documentElement.scrollTop + a.clientY\r\n    } else h = 1000 < document.body.clientWidth ? a.pageX - (document.body.clientWidth - 1000) / 2 : a.pageX,\r\n    a = a.pageY;\r\n    f.value = b + '&' + c;\r\n    d.style.left = h + 'px';\r\n    d.style.top = a + 10 + 'px'\r\n  } else d.style.display = 'none',\r\n  f.value = ''\r\n}";
+    hook_checkMsg = "\r\nfunction checkMsg() {\r\n  var a = document.getElementById('msgtalk'),\r\n  b = a.value;\r\n  if (1800 < b.utf8Length()) alert('\u53EA\u80FD\u5BEB600\u500B\u5B57\u5594!');\r\n   else if ('' == b.replace(/(^\\s*)|(\\s*$)/g, '')) alert('\u4E0D\u80FD\u7A7A\u767D!');\r\n   else if (1 == document.getElementById('sendingMsg') .value) alert('\u8655\u7406\u4E2D\u8ACB\u7A0D\u5019\uFF01');\r\n   else {\r\n    var b = 'mainmsg.php',\r\n    c = '',\r\n    d = document.getElementById('ori_s');\r\n    if (d) switch (d.value.substr(0, 1)) {\r\n    case 'g':\r\n      b = 'guildMsgNew.php',\r\n      c = '&sf=' + d.value.substr(1)\r\n    }\r\n    document.getElementById('sendingMsg') .value = 1;\r\n    noreply = 0;\r\n    document.getElementById('forbidden') && (noreply = document.getElementById('forbidden') .checked ? 1 : 0);\r\n    secret = document.getElementById('privacy') .checked ? 1 : 0;\r\n    $('iframe') .each(function (a) {\r\n      0 <= a.src.indexOf('?autoplay=1') && (a.src = a.src.replace(/\\?autoplay=1/gi, ''))\r\n    });\r\n    $.ajax({\r\n      url: '/ajax/' + b,\r\n      method: 'POST',\r\n      param: 'msg=' + encodeURIComponent(a.value) + '&status=' + secret + '&flag=' + noreply + c,\r\n      success: function (a) {\r\n        showActiveDiv('MSG-box2', a)\r\n        try {\r\n          window.ba4b.updateImageIn()\r\n        } catch (e) {\r\n          console.log(e);\r\n        }\r\n      }\r\n    })\r\n  }\r\n}";
+    hook_checkReply = "\r\nfunction checkReply(a, b) {\r\n  var c = document.getElementById('replyMsg' + a),\r\n  d = c.value;\r\n  countLimit(c, 85) || ('' == d.replace(/(^s*)|(s*$)/g, '') ? (alert('\u8ACB\u8F38\u5165\u7559\u8A00'), c.focus())  : document.getElementById('replyBtn' + a) .disabled ? alert('\u8655\u7406\u4E2D\uFF0C\u8ACB\u7A0D\u5019')  : (document.getElementById('replyBtn' + a) .disabled = !0, $.ajax({\r\n    url: '/ajax/comment.php?a=A&s=' + a,\r\n    method: 'POST',\r\n    param: 'a=A&s=' + a + '&c=' + encodeURIComponent(c.value) + '&u=' + b,\r\n    success: function (b) {\r\n    showActiveDiv('allReply' + a, b)\r\n    try {\r\n      window.ba4b.updateImageIn()\r\n    } catch (e) {\r\n      console.log(e);\r\n    }\r\n    }\r\n  })))\r\n}";
+    hook_r_creation_gplist = "\r\n  function r_creation_gplist( xmldoc ) {\r\n    var nodes = xmldoc.getElementsByTagName('errMsg');\r\n    var htmlcode = '';\r\n\n    if(nodes.length) {\r\n      htmlcode = nodes[0].firstChild.nodeValue;\r\n    }\r\n    else{\r\n      var userid = xmldoc.getElementsByTagName('userid');\r\n      var next = xmldoc.getElementsByTagName('next');\r\n      for(i=0;i<userid.length;i++){\r\n        var uid = userid[i].firstChild.nodeValue;\r\n        htmlcode += '<a href=\"http://home.gamer.com.tw/'+uid+'\" target=\"_blank\"><img src=\"'+getAvatarPic(uid)+'\" onmouseover=\"showGamerCard(event,\\''+uid.toLowerCase()+'\\')\" onmousemove=\"moveGamerCard(event)\" onmouseout=\"hideGamerCard()\"></a>'\r\n      }\r\n      if( next.length ) {\r\n        htmlcode += next[0].firstChild.nodeValue;\r\n      }\r\n    }\r\n    $('#gplist').html(htmlcode);\r\n    $('#gplist').show();\r\n    try {\r\n      window.ba4b.updateImageIn()\r\n    } catch (e) {\r\n      console.log(e);\r\n    }\r\n    \r\n  }";
+    hook_r_creation_reply = "\r\n  function r_creation_reply(xmldoc) {\r\n    var error = $('MSG', xmldoc).val();\r\n    if( error ) {\r\n      alert(error);\r\n      return ;\r\n    }\r\n\n    var html = $('TXT',xmldoc).val();\r\n    var rsn = $('RSN',xmldoc).val();\r\n\n    $('#reply'+rsn).val('');\r\n\n\n    if( 0 != rsn ) {\r\n      $('#ownerreplys'+rsn).html($('#ownerreplys'+rsn).html()+html);\r\n    }else{\r\n      $('#replys').html($('#replys').html()+html);\r\n    }\r\n\n    creation_changetxt('replys');\r\n\n    egg('button[disabled]').attr('disabled',false);\r\n    try {\r\n      window.ba4b.updateImageIn()\r\n    } catch (e) {\r\n      console.log(e);\r\n    }\r\n  }";
+    AjaxHook = function (super$) {
+      extends$(AjaxHook, super$);
+      function AjaxHook() {
       }
-      Deferer.prototype.add = function () {
-        return this.all++;
+      AjaxHook.prototype.injectHook = function () {
+        var guildPattern, guildSingleMessagePattern, homePattern;
+        guildPattern = /http:\/\/guild\.gamer\.com\.tw\/guild\.php\?sn=.+/g;
+        guildSingleMessagePattern = /http:\/\/guild\.gamer\.com\.tw\/singleACMsg\.php\?.+/g;
+        homePattern = /http:\/\/home\.gamer\.com\.tw\/.+/g;
+        if (guildPattern.test(window.location.href)) {
+          this._injectGuildHook();
+        } else if (guildSingleMessagePattern.test(window.location.href)) {
+          this._injectGuildHook();
+        }
+        if (homePattern.test(window.location.href))
+          return this._injectHomeHook();
       };
-      Deferer.prototype.count = function () {
-        this.counted++;
-        this.emit('progress', {
-          all: this.all,
-          fired: this.counted
-        });
-        if (this.counted === this.all)
-          return this.emit('done');
+      AjaxHook.prototype._injectHomeHook = function () {
+        this._injectScript(hook_r_creation_gplist);
+        return this._injectScript(hook_r_creation_reply);
       };
-      return Deferer;
+      AjaxHook.prototype._injectGuildHook = function () {
+        this._injectScript(hook_readAllReply);
+        this._injectScript(hook_readMore);
+        this._injectScript(hook_getVoteList);
+        this._injectScript(hook_checkMsg);
+        return this._injectScript(hook_checkReply);
+      };
+      AjaxHook.prototype._injectScript = function (scriptStr) {
+        var _window, e;
+        if ('undefined' !== typeof unsafeWindow && null != unsafeWindow) {
+          _window = unsafeWindow;
+        } else {
+          _window = window;
+        }
+        try {
+          _window['eval'](scriptStr);
+          return console.log('script injected!');
+        } catch (e$) {
+          e = e$;
+          return console.log('eval error', e, scriptStr);
+        }
+      };
+      return AjaxHook;
     }(EventEmitter);
-    ImageCreater = function (super$1) {
-      extends$(ImageCreater, super$1);
-      function ImageCreater(param$) {
-        if (null == param$)
-          param$ = Deferer;
-        this.Deferer = param$;
-        this.locked = false;
-      }
-      ImageCreater.prototype.create = function (urls) {
-        var imgElement, url;
-        if (this.locked === true) {
-          console.log('incorrect invoke');
-          return false;
-        }
-        this.locked = true;
-        console.log('image create start');
-        this.deferer = new this.Deferer;
-        for (var i$ = 0, length$ = urls.length; i$ < length$; ++i$) {
-          url = urls[i$];
-          imgElement = document.createElement('img');
-          imgElement.crossOrigin = 'anonymous';
-          imgElement.src = url.url;
-          url.image = imgElement;
-          this.deferer.add();
-          imgElement.addEventListener('load', function (this$) {
-            return function () {
-              this$.deferer.count();
-              return true;
-            };
-          }(this));
-        }
-        this.deferer.on('done', function (this$) {
-          return function () {
-            this$.emit('done', urls);
-            this$.deferer.removeAllListeners('done');
-            this$.deferer = null;
-            this$.removeAllListeners('done');
-            this$.locked = false;
-            return true;
-          };
-        }(this));
-        return true;
-      };
-      return ImageCreater;
-    }(EventEmitter);
-    UrlCreater = function (super$2) {
-      extends$(UrlCreater, super$2);
-      function UrlCreater(param$) {
-        if (null == param$)
-          param$ = ImageCreater;
-        this.Imagecreater = param$;
-        this.locked = false;
-        this.urlMap = null;
-        this.urlList = null;
-        this.imagecreater = null;
-      }
-      UrlCreater.prototype.create = function (list) {
-        var item;
-        console.log('create start');
-        if (this.locked === true) {
-          console.log('incorrect invoke');
-          return false;
-        }
-        this.locked = true;
-        this.urlMap = {};
-        this.urlList = [];
-        this.imagecreater = new this.Imagecreater;
-        for (var i$ = 0, length$ = list.length; i$ < length$; ++i$) {
-          item = list[i$];
-          this.urlMap[item.BAHA_ID] = {};
-          this.urlMap[item.BAHA_ID].head = 'http://www.gravatar.com/avatar/' + item.HASHED_MAIL + '?s=40';
-          this.urlList.push({
-            id: item.BAHA_ID,
-            url: 'http://www.gravatar.com/avatar/' + item.HASHED_MAIL + '?s=110'
-          });
-        }
-        this.imagecreater.on('done', function (this$) {
-          return function (urls) {
-            var canvas, ctx, url;
-            for (var i$1 = 0, length$1 = urls.length; i$1 < length$1; ++i$1) {
-              url = urls[i$1];
-              canvas = document.createElement('canvas');
-              canvas.width = 110;
-              canvas.height = 160;
-              ctx = canvas.getContext('2d');
-              canvasHelper.drawImage(url.image, ctx, {
-                xPaintArea: 110,
-                yPaintArea: 160
-              });
-              this$.urlMap[url.id].full = canvas.toDataURL('image/png');
-            }
-            this$.emit('done', this$.urlMap);
-            this$.removeAllListeners('done');
-            this$.locked = false;
-            this$.imagecreater = null;
-            this$.urlList = null;
-            return false;
-          };
-        }(this));
-        return this.imagecreater.create(this.urlList);
-      };
-      return UrlCreater;
-    }(EventEmitter);
-    module.exports = UrlCreater;
+    module.exports = AjaxHook;
     function isOwn$(o, p) {
       return {}.hasOwnProperty.call(o, p);
     }
@@ -489,6 +416,205 @@
       return this._events[type];
     };
   });
+  require.define('/view/image_replacer.coffee', function (module, exports, __dirname, __filename) {
+    var ImageReplacer;
+    ImageReplacer = function () {
+      function ImageReplacer(jQuery) {
+        this.$ = jQuery;
+      }
+      ImageReplacer.prototype.change = function (map, parent) {
+        var images, result;
+        if (null != parent) {
+          images = this.$(parent).find('img');
+        } else {
+          images = this.$('img');
+        }
+        result = false;
+        images = images.filter(function () {
+          var format, str;
+          format = /http:\/\/avatar2\.bahamut\.com\.tw\/avataruserpic\/\w\/\w\/(\w+)\/.*/g;
+          str = this.src;
+          return format.test(str);
+        });
+        images.each(function () {
+          var name, str;
+          str = this.src;
+          name = str.split('/');
+          name = name[6];
+          if (null != map[name])
+            if (str.search('_s') >= 0) {
+              this.src = map[name].head;
+            } else {
+              this.src = map[name].full;
+            }
+          return true;
+        });
+        return true;
+      };
+      return ImageReplacer;
+    }();
+    module.exports = ImageReplacer;
+    function isOwn$(o, p) {
+      return {}.hasOwnProperty.call(o, p);
+    }
+    function extends$(child, parent) {
+      for (var key in parent)
+        if (isOwn$(parent, key))
+          child[key] = parent[key];
+      function ctor() {
+        this.constructor = child;
+      }
+      ctor.prototype = parent.prototype;
+      child.prototype = new ctor;
+      child.__super__ = parent.prototype;
+      return child;
+    }
+  });
+  require.define('/util/urlcreater.coffee', function (module, exports, __dirname, __filename) {
+    var canvasHelper, Deferer, EventEmitter, ImageCreater, unsafe, UrlCreater;
+    unsafe = unsafeWindow;
+    canvasHelper = require('/util/canvashelper.coffee', module);
+    EventEmitter = require('events', module).EventEmitter;
+    Deferer = function (super$) {
+      extends$(Deferer, super$);
+      function Deferer() {
+        this.all = 0;
+        this.counted = 0;
+      }
+      Deferer.prototype.add = function () {
+        return this.all++;
+      };
+      Deferer.prototype.count = function () {
+        this.counted++;
+        this.emit('progress', {
+          all: this.all,
+          fired: this.counted
+        });
+        if (this.counted === this.all)
+          return this.emit('done');
+      };
+      return Deferer;
+    }(EventEmitter);
+    ImageCreater = function (super$1) {
+      extends$(ImageCreater, super$1);
+      function ImageCreater(param$) {
+        if (null == param$)
+          param$ = Deferer;
+        this.Deferer = param$;
+        this.locked = false;
+      }
+      ImageCreater.prototype.create = function (urls) {
+        var imgElement, url;
+        if (this.locked === true) {
+          console.log('incorrect invoke');
+          return false;
+        }
+        this.locked = true;
+        console.log('image create start');
+        this.deferer = new this.Deferer;
+        for (var i$ = 0, length$ = urls.length; i$ < length$; ++i$) {
+          url = urls[i$];
+          imgElement = document.createElement('img');
+          imgElement.crossOrigin = 'anonymous';
+          imgElement.src = url.url;
+          url.image = imgElement;
+          this.deferer.add();
+          imgElement.addEventListener('load', function (this$) {
+            return function () {
+              this$.deferer.count();
+              return true;
+            };
+          }(this));
+        }
+        this.deferer.on('done', function (this$) {
+          return function () {
+            this$.emit('done', urls);
+            this$.deferer.removeAllListeners('done');
+            this$.deferer = null;
+            this$.removeAllListeners('done');
+            this$.locked = false;
+            return true;
+          };
+        }(this));
+        return true;
+      };
+      return ImageCreater;
+    }(EventEmitter);
+    UrlCreater = function (super$2) {
+      extends$(UrlCreater, super$2);
+      function UrlCreater(param$) {
+        if (null == param$)
+          param$ = ImageCreater;
+        this.Imagecreater = param$;
+        this.locked = false;
+        this.urlMap = null;
+        this.urlList = null;
+        this.imagecreater = null;
+      }
+      UrlCreater.prototype.create = function (list) {
+        var item;
+        console.log('create start');
+        if (this.locked === true) {
+          console.log('incorrect invoke');
+          return false;
+        }
+        this.locked = true;
+        this.urlMap = {};
+        this.urlList = [];
+        this.imagecreater = new this.Imagecreater;
+        for (var i$ = 0, length$ = list.length; i$ < length$; ++i$) {
+          item = list[i$];
+          this.urlMap[item.BAHA_ID] = {};
+          this.urlMap[item.BAHA_ID].head = 'http://www.gravatar.com/avatar/' + item.HASHED_MAIL + '?s=40';
+          this.urlList.push({
+            id: item.BAHA_ID,
+            url: 'http://www.gravatar.com/avatar/' + item.HASHED_MAIL + '?s=110'
+          });
+        }
+        this.imagecreater.on('done', function (this$) {
+          return function (urls) {
+            var canvas, ctx, url;
+            for (var i$1 = 0, length$1 = urls.length; i$1 < length$1; ++i$1) {
+              url = urls[i$1];
+              canvas = document.createElement('canvas');
+              canvas.width = 110;
+              canvas.height = 160;
+              ctx = canvas.getContext('2d');
+              canvasHelper.drawImage(url.image, ctx, {
+                xPaintArea: 110,
+                yPaintArea: 160
+              });
+              this$.urlMap[url.id].full = canvas.toDataURL('image/png');
+            }
+            this$.emit('done', this$.urlMap);
+            this$.removeAllListeners('done');
+            this$.locked = false;
+            this$.imagecreater = null;
+            this$.urlList = null;
+            return false;
+          };
+        }(this));
+        return this.imagecreater.create(this.urlList);
+      };
+      return UrlCreater;
+    }(EventEmitter);
+    module.exports = UrlCreater;
+    function isOwn$(o, p) {
+      return {}.hasOwnProperty.call(o, p);
+    }
+    function extends$(child, parent) {
+      for (var key in parent)
+        if (isOwn$(parent, key))
+          child[key] = parent[key];
+      function ctor() {
+        this.constructor = child;
+      }
+      ctor.prototype = parent.prototype;
+      child.prototype = new ctor;
+      child.__super__ = parent.prototype;
+      return child;
+    }
+  });
   require.define('/util/canvashelper.coffee', function (module, exports, __dirname, __filename) {
     var drawImage;
     drawImage = function (image, target, param) {
@@ -599,78 +725,6 @@
       return child;
     }
   });
-  require.define('/view/ajax_hook.coffee', function (module, exports, __dirname, __filename) {
-    var AjaxHook, EventEmitter, hook_checkMsg, hook_checkReply, hook_getVoteList, hook_r_creation_gplist, hook_r_creation_reply, hook_readAllReply, hook_readMore;
-    EventEmitter = require('events', module).EventEmitter;
-    hook_readAllReply = "\r\nfunction readAllReply(a, b) {\r\n  $.ajax({\r\n    url: '/ajax/comment.php?a=S&s=' + a,\r\n    method: 'POST',\r\n    param: 'a=S&s=' + a,\r\n    loading: function () {\r\n      b.innerHTML = '<img src=\"http://i2.bahamut.com.tw/loading.gif\">'\r\n    },\r\n    success: function (b) {\r\n      changeDiv('allReply' + a, b)\r\n      try {\r\n        window.ba4b.updateImageIn()\r\n      } catch (e) {\r\n        console.log(e);\r\n      }\r\n    }\r\n  })\r\n}";
-    hook_readMore = "\r\nfunction readMore(a) {\r\n  if (point_now < total_ary) {\r\n    a = point_now;\r\n    var b = buildMsgAndReply3();\r\n    document.getElementById('noMsg') .style.display = 'none';\r\n    document.getElementById('readMore') .innerHTML += b;\r\n    for (i = a; i < point_now && i < total_ary; i++) changetxt('m-' + msgArr[i].sn)\r\n    \r\n    try {\r\n      window.ba4b.updateImageIn()\r\n    } catch (e) {\r\n      console.log(e);\r\n    }\r\n    \r\n  } else {\r\n    document.getElementById('moreBtn') .disabled = !0;\r\n    var b = getCookie('BAHAID'),\r\n    c = '',\r\n    d = '';\r\n    t = document.getElementById('lastTime') .value;\r\n    1 < (new Date - new Date(t.substr(0, 4), t.substr(5, 2) - 1, t.substr(8, 2), t.substr(11, 2), t.substr(14, 2), t.substr(17, 2))) / 7776000000 ? (alert('\u60A8\u6C92\u6709\u66F4\u820A\u7684\u52D5\u614B\u4E86\uFF01'), document.getElementById('moreBtn') .disabled = !1)  : (r = document.getElementById('daysRange') .value, a.toLowerCase() == b.toLowerCase() ? (c = '/ajax/getMoreMsg.php', d = 't=' + t + '&r=' + r + '&k=' + k + '&auto=' + document.getElementById('autoReadMore') .value + '&lastGetSn=' + document.getElementById('lastGetSn') .value)  : (c = '/ajax/othersMoreMsg.php', d = 't=' + t + '&r=' + r + '&u=' + a + '&k=' + k + '&lastGetSn=' + document.getElementById('lastGetSn') .value), $.ajax({\r\n      url: c,\r\n      method: 'POST',\r\n      param: d,\r\n      success: function (a) {\r\n        showActiveDiv('readMore', a)\r\n        \r\n        try {\r\n          window.ba4b.updateImageIn()\r\n        } catch (e) {\r\n          console.log(e);\r\n        }\r\n      }\r\n    }))\r\n  }\r\n}";
-    hook_getVoteList = "\r\nfunction getVoteList(a, b, c) {\r\n  var d = document.getElementById('msgvotelist'),\r\n  f = document.getElementById('lastSn');\r\n  if ('none' == d.style.display || 'block' == d.style.display && b + '&' + c != f.value) {\r\n    'block' == d.style.display && (d.style.display = 'none');\r\n    $.ajax({\r\n      url: '/ajax/comment.php?a=showGPBP&t=' + c + '&sn=' + b,\r\n      method: 'POST',\r\n      param: 'a=showGPBP&t=' + c + '&sn=' + b,\r\n      success: function (a) {\r\n        showVoteList('msgvotelist', a)\r\n        try {\r\n          window.ba4b.updateImageIn()\r\n        } catch (e) {\r\n          console.log(e);\r\n        }\r\n      }\r\n    });\r\n    if (isIE()) {\r\n      var h = a.x;\r\n      a = document.documentElement.scrollTop + a.clientY\r\n    } else h = 1000 < document.body.clientWidth ? a.pageX - (document.body.clientWidth - 1000) / 2 : a.pageX,\r\n    a = a.pageY;\r\n    f.value = b + '&' + c;\r\n    d.style.left = h + 'px';\r\n    d.style.top = a + 10 + 'px'\r\n  } else d.style.display = 'none',\r\n  f.value = ''\r\n}";
-    hook_checkMsg = "\r\nfunction checkMsg() {\r\n  var a = document.getElementById('msgtalk'),\r\n  b = a.value;\r\n  if (1800 < b.utf8Length()) alert('\u53EA\u80FD\u5BEB600\u500B\u5B57\u5594!');\r\n   else if ('' == b.replace(/(^\\s*)|(\\s*$)/g, '')) alert('\u4E0D\u80FD\u7A7A\u767D!');\r\n   else if (1 == document.getElementById('sendingMsg') .value) alert('\u8655\u7406\u4E2D\u8ACB\u7A0D\u5019\uFF01');\r\n   else {\r\n    var b = 'mainmsg.php',\r\n    c = '',\r\n    d = document.getElementById('ori_s');\r\n    if (d) switch (d.value.substr(0, 1)) {\r\n    case 'g':\r\n      b = 'guildMsgNew.php',\r\n      c = '&sf=' + d.value.substr(1)\r\n    }\r\n    document.getElementById('sendingMsg') .value = 1;\r\n    noreply = 0;\r\n    document.getElementById('forbidden') && (noreply = document.getElementById('forbidden') .checked ? 1 : 0);\r\n    secret = document.getElementById('privacy') .checked ? 1 : 0;\r\n    $('iframe') .each(function (a) {\r\n      0 <= a.src.indexOf('?autoplay=1') && (a.src = a.src.replace(/\\?autoplay=1/gi, ''))\r\n    });\r\n    $.ajax({\r\n      url: '/ajax/' + b,\r\n      method: 'POST',\r\n      param: 'msg=' + encodeURIComponent(a.value) + '&status=' + secret + '&flag=' + noreply + c,\r\n      success: function (a) {\r\n        showActiveDiv('MSG-box2', a)\r\n        try {\r\n          window.ba4b.updateImageIn()\r\n        } catch (e) {\r\n          console.log(e);\r\n        }\r\n      }\r\n    })\r\n  }\r\n}";
-    hook_checkReply = "\r\nfunction checkReply(a, b) {\r\n  var c = document.getElementById('replyMsg' + a),\r\n  d = c.value;\r\n  countLimit(c, 85) || ('' == d.replace(/(^s*)|(s*$)/g, '') ? (alert('\u8ACB\u8F38\u5165\u7559\u8A00'), c.focus())  : document.getElementById('replyBtn' + a) .disabled ? alert('\u8655\u7406\u4E2D\uFF0C\u8ACB\u7A0D\u5019')  : (document.getElementById('replyBtn' + a) .disabled = !0, $.ajax({\r\n    url: '/ajax/comment.php?a=A&s=' + a,\r\n    method: 'POST',\r\n    param: 'a=A&s=' + a + '&c=' + encodeURIComponent(c.value) + '&u=' + b,\r\n    success: function (b) {\r\n    showActiveDiv('allReply' + a, b)\r\n    try {\r\n      window.ba4b.updateImageIn()\r\n    } catch (e) {\r\n      console.log(e);\r\n    }\r\n    }\r\n  })))\r\n}";
-    hook_r_creation_gplist = "\r\n  function r_creation_gplist( xmldoc ) {\r\n    var nodes = xmldoc.getElementsByTagName('errMsg');\r\n    var htmlcode = '';\r\n\n    if(nodes.length) {\r\n      htmlcode = nodes[0].firstChild.nodeValue;\r\n    }\r\n    else{\r\n      var userid = xmldoc.getElementsByTagName('userid');\r\n      var next = xmldoc.getElementsByTagName('next');\r\n      for(i=0;i<userid.length;i++){\r\n        var uid = userid[i].firstChild.nodeValue;\r\n        htmlcode += '<a href=\"http://home.gamer.com.tw/'+uid+'\" target=\"_blank\"><img src=\"'+getAvatarPic(uid)+'\" onmouseover=\"showGamerCard(event,\\''+uid.toLowerCase()+'\\')\" onmousemove=\"moveGamerCard(event)\" onmouseout=\"hideGamerCard()\"></a>'\r\n      }\r\n      if( next.length ) {\r\n        htmlcode += next[0].firstChild.nodeValue;\r\n      }\r\n    }\r\n    $('#gplist').html(htmlcode);\r\n    $('#gplist').show();\r\n    try {\r\n      window.ba4b.updateImageIn()\r\n    } catch (e) {\r\n      console.log(e);\r\n    }\r\n    \r\n  }";
-    hook_r_creation_reply = "\r\n  function r_creation_reply(xmldoc) {\r\n    var error = $('MSG', xmldoc).val();\r\n    if( error ) {\r\n      alert(error);\r\n      return ;\r\n    }\r\n\n    var html = $('TXT',xmldoc).val();\r\n    var rsn = $('RSN',xmldoc).val();\r\n\n    $('#reply'+rsn).val('');\r\n\n\n    if( 0 != rsn ) {\r\n      $('#ownerreplys'+rsn).html($('#ownerreplys'+rsn).html()+html);\r\n    }else{\r\n      $('#replys').html($('#replys').html()+html);\r\n    }\r\n\n    creation_changetxt('replys');\r\n\n    egg('button[disabled]').attr('disabled',false);\r\n    try {\r\n      window.ba4b.updateImageIn()\r\n    } catch (e) {\r\n      console.log(e);\r\n    }\r\n  }";
-    AjaxHook = function (super$) {
-      extends$(AjaxHook, super$);
-      function AjaxHook() {
-      }
-      AjaxHook.prototype.injectHook = function () {
-        var guildPattern, guildSingleMessagePattern, homePattern;
-        guildPattern = /http:\/\/guild\.gamer\.com\.tw\/guild\.php\?sn=.+/g;
-        guildSingleMessagePattern = /http:\/\/guild\.gamer\.com\.tw\/singleACMsg\.php\?.+/g;
-        homePattern = /http:\/\/home\.gamer\.com\.tw\/.+/g;
-        if (guildPattern.test(window.location.href)) {
-          this._injectGuildHook();
-        } else if (guildSingleMessagePattern.test(window.location.href)) {
-          this._injectGuildHook();
-        }
-        if (homePattern.test(window.location.href))
-          return this._injectHomeHook();
-      };
-      AjaxHook.prototype._injectHomeHook = function () {
-        this._injectScript(hook_r_creation_gplist);
-        return this._injectScript(hook_r_creation_reply);
-      };
-      AjaxHook.prototype._injectGuildHook = function () {
-        this._injectScript(hook_readAllReply);
-        this._injectScript(hook_readMore);
-        this._injectScript(hook_getVoteList);
-        this._injectScript(hook_checkMsg);
-        return this._injectScript(hook_checkReply);
-      };
-      AjaxHook.prototype._injectScript = function (scriptStr) {
-        var _window, e;
-        if ('undefined' !== typeof unsafeWindow && null != unsafeWindow) {
-          _window = unsafeWindow;
-        } else {
-          _window = window;
-        }
-        try {
-          _window['eval'](scriptStr);
-          return console.log('script injected!');
-        } catch (e$) {
-          e = e$;
-          return console.log('eval error', e, scriptStr);
-        }
-      };
-      return AjaxHook;
-    }(EventEmitter);
-    module.exports = AjaxHook;
-    function isOwn$(o, p) {
-      return {}.hasOwnProperty.call(o, p);
-    }
-    function extends$(child, parent) {
-      for (var key in parent)
-        if (isOwn$(parent, key))
-          child[key] = parent[key];
-      function ctor() {
-        this.constructor = child;
-      }
-      ctor.prototype = parent.prototype;
-      child.prototype = new ctor;
-      child.__super__ = parent.prototype;
-      return child;
-    }
-  });
   require.define('/util/storage.coffee', function (module, exports, __dirname, __filename) {
     var GM_Storage;
     GM_Storage = function () {
@@ -724,60 +778,6 @@
       return GM_Storage;
     }();
     module.exports = GM_Storage;
-    function isOwn$(o, p) {
-      return {}.hasOwnProperty.call(o, p);
-    }
-    function extends$(child, parent) {
-      for (var key in parent)
-        if (isOwn$(parent, key))
-          child[key] = parent[key];
-      function ctor() {
-        this.constructor = child;
-      }
-      ctor.prototype = parent.prototype;
-      child.prototype = new ctor;
-      child.__super__ = parent.prototype;
-      return child;
-    }
-  });
-  require.define('/view/image_replacer.coffee', function (module, exports, __dirname, __filename) {
-    var ImageReplacer;
-    ImageReplacer = function () {
-      function ImageReplacer(jQuery) {
-        this.$ = jQuery;
-      }
-      ImageReplacer.prototype.change = function (map, parent) {
-        var images, result;
-        if (null != parent) {
-          images = this.$(parent).find('img');
-        } else {
-          images = this.$('img');
-        }
-        result = false;
-        images = images.filter(function () {
-          var format, str;
-          format = /http:\/\/avatar2\.bahamut\.com\.tw\/avataruserpic\/\w\/\w\/(\w+)\/.*/g;
-          str = this.src;
-          return format.test(str);
-        });
-        images.each(function () {
-          var name, str;
-          str = this.src;
-          name = str.split('/');
-          name = name[6];
-          if (null != map[name])
-            if (str.search('_s') >= 0) {
-              this.src = map[name].head;
-            } else {
-              this.src = map[name].full;
-            }
-          return true;
-        });
-        return true;
-      };
-      return ImageReplacer;
-    }();
-    module.exports = ImageReplacer;
     function isOwn$(o, p) {
       return {}.hasOwnProperty.call(o, p);
     }
