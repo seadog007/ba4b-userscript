@@ -139,7 +139,7 @@
       };
       return Ba4b;
     }();
-    if (window === window.top) {
+    if (window === window.top || document.domain === 'gc.bahamut.com.tw') {
       storage = new Storage(GM_getValue, GM_setValue);
       downloader = new Downloader;
       imageChanger = new ImageChanger($);
