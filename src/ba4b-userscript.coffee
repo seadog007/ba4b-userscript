@@ -139,7 +139,7 @@ class Ba4b
       map = storage.get 'map'
     imageChanger.change map, conatiner
 
-if window is window.top
+if window is window.top or document.domain is "gc.bahamut.com.tw"
   storage = new Storage GM_getValue, GM_setValue
   downloader = new Downloader
   imageChanger = new ImageChanger $
