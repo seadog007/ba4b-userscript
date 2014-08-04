@@ -1,11 +1,11 @@
 $ = (require 'lib/jquery-1.11_1.js').noConflict()
 Downloader = require "util/downloader.coffee"
 defaultConfig = require "config.js"
-ImageChanger = require "view/image_replacer.coffee"
 Storage = require "util/storage.coffee"
-AjaxHook = require "view/ajax_hook.coffee"
-
 UrlCreater = require "util/urlcreater.coffee"
+
+ImageChanger = require "view/image_replacer.coffee"
+AjaxHook = require "view/ajax_hook.coffee"
 StyleFixer = require "view/style_fixer.coffee"
 ###
 list format
@@ -137,7 +137,7 @@ class Ba4b
   changeImage: (map, conatiner)->
     if !map?
       map = storage.get 'map'
-    imageChanger.change map
+    imageChanger.change map, conatiner
 
 if window is window.top
   storage = new Storage GM_getValue, GM_setValue
@@ -192,4 +192,3 @@ if window is window.top
   
   GM_registerMenuCommand "BA4B : 立刻更新頭像列表", redownloadList
   GM_registerMenuCommand "BA4B : 重設所有設定", resetAll
-  
